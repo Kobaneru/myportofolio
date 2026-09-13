@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class Achievement(models.Model):
     title = models.CharField(max_length=200)
@@ -39,3 +40,33 @@ class Experience(models.Model):
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+class Education(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution_name = models.CharField(max_length=255)
+    degree = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    started_at = models.DateField()
+    ended_at = models.DateField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(ended_at__gte=models.F('started_at')),
+                name='education_ended_at_gte_started_at',
+            )
+        ]
+        ordering = ['-started_at']
+
+    def clean(self):
+        super().clean()
+        if self.started_at and self.ended_at:
+            if self.ended_at < self.started_at:
+                raise ValidationError({
+                    'ended_at': 'Tanggal berakhir tidak boleh lebih awal dari tanggal mulai.'
+                })
+
+    def __str__(self):
+        if self.degree:
+            return f"{self.degree} - {self.institution_name}"
+        return self.institution_name
