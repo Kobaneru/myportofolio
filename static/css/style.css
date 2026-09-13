@@ -19,6 +19,11 @@ body {
     color: var(--ink);
     background-color: var(--paper);
     line-height: 1.6;
+
+    /* --- Sticky Footer --- */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 main {
@@ -26,6 +31,7 @@ main {
     flex-direction: column;
     gap: 3rem;
     padding: 4.5rem 0 5rem;
+    flex: 1;
 }
 
 h1, .brand {
@@ -190,6 +196,7 @@ h1, .brand {
     color: var(--text-muted);
     font-size: 0.85rem;
     border-top: 1px solid var(--line);
+    margin-top: auto;
 }
 
 /* Membuat interaksi dengan user lebih nyaman */
@@ -303,7 +310,6 @@ html {
 
 .experience-section {
     padding: 4rem 0;
-    /* border-top: 1px solid var(--line); */
 }
 
 .section-kicker {
