@@ -34,8 +34,20 @@ main {
     flex: 1;
 }
 
-h1, .brand {
+h1, h2, h3, .brand {
     font-family: "Space Grotesk", -apple-system, sans-serif;
+}
+
+h1 {
+    font-weight: 700;
+}
+
+h2 {
+    font-weight: 700;
+}
+
+h3 {
+    font-weight: 700;
 }
 
 .container {
@@ -274,11 +286,10 @@ html {
 }
 
 .achievements-text h3 {
-    font-family: "Space Grotesk", -apple-system, sans-serif;
     font-size: 1.05rem;
-    line-height: 1.3;
+    line-height: 1.35;
+    font-weight: 700;
     margin-bottom: 0.25rem;
-    color: var(--ink);
 }
 
 .achievements-text .institution {
@@ -325,17 +336,34 @@ html {
     font-size: 2rem;
 }
 
+/* Flex Column Layout */
 .experience-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
-.experience-card {
-    padding: 1.25rem;
-    background-color: #fff;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
+.experience-card,
+.education-card {
+    padding: 1.5rem 0.5rem;
+    background: transparent;
+    border: none; /* Menghapus border kotak bawaan */
+    border-bottom: 1px solid var(--line);
+    border-radius: 0; /* Menghilangkan sudut melengkung */
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+/* Menambahkan garis atas hanya pada list yang paling pertama */
+.experience-card:first-child,
+.education-card:first-child {
+    border-top: 1px solid var(--line);
+}
+
+/* --- Animasi Hover ke Kanan --- */
+.experience-card:hover,
+.education-card:hover {
+    transform: translateX(6px);
+    box-shadow: none; /* Me-reset efek shadow dari desain education sebelumnya */
 }
 
 .experience-category {
@@ -346,8 +374,10 @@ html {
 }
 
 .experience-card h2 {
-    margin: 0.5rem 0;
+    margin: 0.5rem 0 0.25rem 0;
     font-size: 1.25rem;
+    line-height: 1.3;
+    font-weight: 700;
 }
 
 .experience-description,
@@ -356,9 +386,73 @@ html {
 }
 
 .experience-status {
-    margin-top: 1rem;
+    margin-bottom: 1rem;
     font-size: 0.85rem;
     font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* --- Education Section --- */
+.education-section {
+    padding: 4rem 0;
+}
+
+.education-section h1 {
+    margin: 0.4rem 0 1.5rem;
+    font-size: 2rem;
+}
+
+/* Flex Column Layout */
+.education-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* --- Animasi Hover ke Kanan --- */
+.education-card:hover {
+    transform: translateX(6px);
+    box-shadow: none; /* Me-reset efek shadow dari desain education sebelumnya */
+}
+
+/* Baris atas card: Nama Institusi & Rentang Waktu */
+.education-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.education-header h2 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    font-weight: 700;
+    margin: 0;
+}
+
+.education-period {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-dark);
+    white-space: nowrap;
+}
+
+.education-degree {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin: 0.2rem 0 0.75rem 0;
+}
+
+.education-description {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
 }
 
 /* Responsif Layar Ponsel */
@@ -419,5 +513,80 @@ html {
         margin-left: 0;
         align-self: flex-start;
         font-size: 0.85rem;
+    }
+
+    .education-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .education-period {
+        font-size: 0.8rem;
+    }
+
+    .experience-card:hover,
+    .education-card:hover {
+        transform: none; 
+    }
+}
+
+/* =========================================
+   PRINT STYLES (@media print)
+   ========================================= */
+@media print {
+    /* 1. Ubah background menjadi putih & teks menjadi hitam pekat */
+    body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* 2. Sembunyikan Navigasi, Footer, dan Elemen Dekoratif */
+    .site-header nav,
+    .site-footer,
+    .photo-block {
+        display: none !important;
+    }
+
+    /* 3. Header: Hanya tampilkan Nama (Brand) dan Garis Pemisah */
+    .site-header {
+        position: static !important; /* Hapus sticky agar tidak menimpa teks di halaman 2 dst */
+        border-bottom: 2px solid #000000 !important; /* Garis pemisah tegas */
+        padding: 0 0 1rem 0 !important;
+    }
+
+    .brand {
+        color: #000000 !important;
+    }
+
+    /* 4. Reset padding & margin untuk menghemat ruang di kertas */
+    main {
+        padding: 2rem 0 !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* 5. Mencegah Card Terpotong di Tengah Saat Ganti Halaman (Page Break) */
+    .achievements-card,
+    .experience-card,
+    .education-card {
+        transform: none !important; /* Matikan animasi/hover saat di-print */
+        break-inside: avoid; /* Menjaga 1 card tetap di 1 halaman yang sama */
+        border-color: #dddddd !important;
+    }
+
+    /* 6. Penyesuaian tombol/badge agar ramah tinta printer (Outlined) */
+    .social-link {
+        background-color: transparent !important;
+        color: #000000 !important;
+        border: 1px solid #000000;
+    }
+
+    .badge {
+        background-color: transparent !important;
+        color: #000000 !important;
+        border-color: #000000 !important;
     }
 }
