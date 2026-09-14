@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Experience - {{ name }}</title>
+    <title>Education - {{ name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -23,32 +23,34 @@
     </header>
 
     <main>
-        <section class="experience-section" id="experience">
+        <section class="education-section" id="education">
             <div class="container">
-                <p class="section-kicker">My journey so far</p>
-                <h1>Experience</h1>
+                <p class="section-kicker">Academic Background</p>
+                <h1>Education</h1>
 
-                <div class="experience-grid">
-                    {% for experience in experience_list %}
-                        <article class="experience-card">
-                            <span class="experience-category">
-                                {{ experience.get_category_display }}
-                            </span>
-                            <h2>{{ experience.title }}</h2>
-
-                            {% if experience.is_ongoing %}
-                                <p class="experience-status"> {{ experience.started_at|date:"F Y" }} &mdash; Present</p>
-                            {% else %}
-                                <p class="experience-status"> {{ experience.started_at|date:"F Y" }} &mdash; {{ experience.ended_at|date:"F Y" }} </p>
+                <div class="education-list">
+                    {% for education in education_list %}
+                        <article class="education-card">
+                            <div class="education-header">
+                                <h2>{{ education.institution_name }}</h2>
+                                <span class="education-period">
+                                    {{ education.started_at|date:"F Y" }} &mdash; {{ education.ended_at|date:"F Y" }}
+                                </span>
+                            </div>
+                            
+                            {% if education.degree %}
+                                <h3 class="education-degree">{{ education.degree }}</h3>
                             {% endif %}
-
-                            <p class="experience-description">
-                                {{ experience.description }}
-                            </p>
+                            
+                            {% if education.description %}
+                                <p class="education-description">
+                                    {{ education.description }}
+                                </p>
+                            {% endif %}
                         </article>
                     {% empty %}
                         <p class="empty-state">
-                            No experience entries added yet.
+                            No education history added yet.
                         </p>
                     {% endfor %}
                 </div>
