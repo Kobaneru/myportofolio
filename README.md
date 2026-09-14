@@ -82,3 +82,53 @@ Dalam pengerjaan Tugas 1 ini, saya memanfaatkan asisten kecerdasan buatan dengan
 Meskipun AI mempermudah saya dalam pembuatan website ini, terdapat beberapa keterbatasan AI sebagai berikut.
 1. AI dapat memahami konteks dengan salah (miskonsepsi) karena sejatinya AI memahami konteks dengan mencocokkan definisi kata dengan training, tanpa benar-benar memahami maksud sehingga perlu adanya review dan perbaikan terhadap kode yang dibuat oleh AI.
 2. Kurang peka terhadap estetika visual dan pengalaman pengguna riil: AI sering kali menghasilkan kode CSS yang secara teori benar, tetapi secara visual terasa kaku, tidak proporsional, atau menghasilkan layout shift yang mengganggu saat diuji langsung di berbagai ukuran layar. Penyesuaian mikro seperti hierarki tipografi, padding, dan kehalusan transisi tetap memerlukan human touch dan pengujian visual secara manual di peramban.
+
+---
+
+### Minggu 2 (Tutorial 02 & Individual Assignment 2)
+* Menambahkan model Education pada aplikasi main untuk mencatat riwayat pendidikan secara terstruktur.
+* Melakukan migrasi basis data untuk skema model baru serta registrasi model ke antarmuka Django Admin.
+* Membuat fungsi view show_education dan template education.html dengan perulangan dinamis serta penanganan kondisi kosong (empty state).
+* Menambahkan named route pada main/urls.py dan memperbarui navbar dengan tag {% url %} yang konsisten.
+* Mengimplementasikan unit test komprehensif (akses URL & template, rendering data, dan empty state).
+* Menambahkan fitur kreativitas berupa mode cetak dokumen (print-friendly stylesheet via @media print) dan penyesuaian tipografi judul kartu.
+
+---
+
+### Tugas 2
+
+1. Alur pemrosesan permintaan (request-response lifecycle) pada arsitektur MVT Django:
+* Permintaan Diterima Proyek (urls.py proyek): Ketika pengguna mengakses URL baru (misalnya /education/), peramban mengirimkan HTTP Request ke server. Berkas urls.py pada level proyek menjadi gerbang utama yang memeriksa awalan path URL dan meneruskannya (include) ke berkas rute aplikasi yang bersangkutan.
+
+* Resolusi Rute Aplikasi (urls.py aplikasi): Berkas main/urls.py mencocokkan sisa path URL dengan pola rute yang telah didaftarkan (path('education/', show_education, name='show_education')). Setelah kecocokan ditemukan, Django memanggil fungsi handler yang sesuai pada views.py.
+
+* Pengambilan Data oleh Controller/Logic Layer (views.py & models.py): Fungsi view mengeksekusi logika aplikasi. Di sini, view berinteraksi dengan models.py melalui Django ORM (misalnya memanggil Education.objects.all()) untuk mengambil rekaman data dari database. View kemudian menyusun data tersebut ke dalam sebuah kamus context.
+
+* Penyajian Data pada Presentation Layer (template): View meneruskan data context ke template yang dituju (education.html). Django Template Engine memproses berkas HTML tersebut, mengevaluasi tag logika seperti {% for %}, {% empty %}, serta memformat variabel tanggal menggunakan filter |date.
+
+* Respons ke Peramban: Template yang telah selesai dikompilasi menjadi dokumen HTML utuh dikemas kembali oleh view ke dalam objek HttpResponse, lalu dikirimkan ke peramban pengguna untuk dirender secara visual.
+
+2. Data untuk bagian portofolio baru sebaiknya disimpan dalam model supaya memudahkan proses penambahan dan pemeliharaan data. Jika data hanya ditulis di dalam HTML (hard-coded), perubahan data ke depannya mengharuskan developer untuk mengubah kode HTML, which is bad practice karena seharusnya perubahan data tidak mengharuskan kita untuk mengubah keseluruhan kode. Selain itu, dengan adanya perubahan kode ini, potensi bug muncul menjadi lebih besar. Karena itu, dengan kita menaruh di dalam model, perubahan/penambahan data ke depannya menjadi lebih "safe" dan mudah dilakukan karena kita dapat langsung mengubahnya melalui routing /admin menggunakan kredensial superuser. Selain itu, hal ini juga berkaitan dengan pemisahan tanggung jawab supaya model bertindak sebagai basis data dan template hanya mengurusi tampilan.
+
+3. Fungsi makemigrations bertujuan hanya untuk membuat file migrasi yang berisi perubahan yang dilakukan pada database aplikasi, sedangkan fungsi migrate bertujuan untuk menerapkan file migrasi yang telah dibuat ke dalam database aplikasi, seperti membuat objek atau kolom baru. Karena itu, perubahan skema database yang dilakukan baru bisa digunakan setelah kita menerapkan fungsi migrate. 
+**Contoh konkret:** Ketika kita menambahkan model baru seperti `Education`, atau ketika kita mengubah field pada model yang sudah ada (misalnya mengubah tipe data field `started_at` menjadi `DateField` dan menambahkan parameter `null=True, blank=True` pada `ended_at`). Perintah `makemigrations` harus dijalankan terlebih dahulu untuk mencatat perubahan field tersebut ke dalam berkas migrasi, kemudian `migrate` dijalankan agar tabel SQLite benar-benar diperbarui dengan struktur kolom yang baru.
+
+---
+
+## 🤖 Pernyataan Penggunaan AI (AI Disclosure)
+
+Dalam pengerjaan Tugas 2 ini, saya memanfaatkan asisten kecerdasan buatan dengan rincian transparansi sebagai berikut:
+
+* **Alat yang Digunakan:** Google Gemini
+* **Strategi Prompting:**
+  * Memastikan pemahaman AI dengan memberikan kode yang sudah dibuat sejauh ini.
+  * Langsung to-the-point agar tidak menghabiskan banyak token.
+* **Bagian Spesifik yang Dibantu:**
+  * Memperbaiki footer yang inkonsisten di antara beberapa page.
+  * Menambahkan dan memodifikasi model Education dengan ketentuan yang sudah didefinisikan.
+  * Membuat dan memodifikasi page `education.html` sesuai dengan ketentuan yang sudah didefinisikan.
+  * Menambahkan fitur print (kreativitas) sesuai ketentuan yang diberikan.
+* **Log Obrolan / Riwayat:** [Tautan log chat atau ringkasan obrolan](https://share.gemini.google/8nUDy99tvKM2)
+
+### Analisis Kritis Keterbatasan AI & Perbaikan Manual
+Meskipun AI mempermudah saya dalam pembuatan website ini, terdapat keterbatasan AI, yaitu AI mungkin memahami maksud saya dengan salah sehingga diperlukan adanya pengecekan lagi by human supaya menjamin apa yang kita inginkan itu benar-benar dimengerti oleh AI. Kemudian, perlu adanya perbaikan yang dilakukan baik secara mandiri ataupun request kepada AI.
