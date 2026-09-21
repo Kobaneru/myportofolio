@@ -132,3 +132,47 @@ Dalam pengerjaan Tugas 2 ini, saya memanfaatkan asisten kecerdasan buatan dengan
 
 ### Analisis Kritis Keterbatasan AI & Perbaikan Manual
 Meskipun AI mempermudah saya dalam pembuatan website ini, terdapat keterbatasan AI, yaitu AI mungkin memahami maksud saya dengan salah sehingga diperlukan adanya pengecekan lagi by human supaya menjamin apa yang kita inginkan itu benar-benar dimengerti oleh AI. Kemudian, perlu adanya perbaikan yang dilakukan baik secara mandiri ataupun request kepada AI.
+
+---
+
+### Minggu 3 (Tutorial 03 & Individual Assignment 3)
+* Mengimplementasikan fitur formulir menggunakan ModelForm untuk melakukan penambahan data (Create) dan pengeditan data (Update) secara dinamis.
+* Menerapkan pengiriman data (data delivery) dengan membuat endpoint yang mengembalikan data dalam format JSON atau XML.
+* Membuat fungsi view khusus yang mengimplementasikan metode pengubahan, penghapusan, dan pengembalian respons menggunakan objek HttpResponse.
+* Memperbarui antarmuka pengguna dengan mengintegrasikan modal hapus interaktif dan memanfaatkan base.html sebagai kerangka utama (skeleton) menggunakan tag {% extends %}.
+
+---
+
+### Tugas 3
+
+1. Alasan menggunakan ModelForm adalah karena kita menerapkan prinsip DRY (Don't Repeat Yourself) dengan menghubungkan secara langsung atribut pada model database menjadi elemen input form HTML. Kita tidak perlu menulis tag input HTML secara manual, memvalidasi tipe data satu per satu secara manual, atau mengekstrak data dari request.POST secara manual untuk menyimpannya ke database. ModelForm secara otomatis men-generate struktur form yang sesuai dengan model, menangani validasi bawaan, dan memiliki metode save() untuk langsung menyimpan atau memperbarui data. Kemudian, alasan wajibnya {% csrf_token %} adalah token CSRF (Cross-Site Request Forgery) adalah fitur keamanan krusial yang diwajibkan oleh Django pada setiap form dengan metode POST. Token ini berbentuk string rahasia dan unik yang dibuat oleh server. Fungsinya adalah untuk memastikan bahwa permintaan (request) yang memanipulasi data (tambah/edit/hapus) benar-benar berasal dari halaman web aplikasi kita sendiri, bukan dari situs peretas yang mencoba meniru sesi (session) pengguna yang sah.
+
+2. JSON (JavaScript Object Notation) lebih disukai karena strukturnya jauh lebih ringan, ringkas, dan mudah dibaca oleh manusia dibandingkan XML. XML memerlukan penulisan tag pembuka dan penutup (verbose) yang membuat ukuran dokumen membengkak. Karena ukurannya yang lebih kecil, transmisi data JSON melalui jaringan menjadi lebih cepat. Selain itu, JSON berasal dari sintaks objek JavaScript, sehingga memiliki integrasi bawaan (native) yang sangat mulus dengan frontend modern (seperti Vanilla JS, React, Vue), membuat proses parsing data menjadi instan tanpa memerlukan perangkat lunak tambahan yang kompleks.
+
+3.
+* Alur Pengembalian Data:
+1. Client meminta (request) akses ke URL endpoint JSON (misalnya /api/experience/).
+2. Router di urls.py mencocokkan URL dan meneruskan permintaan ke fungsi view terkait.
+3. Di dalam view, Django ORM melakukan query ke database dan mengembalikan kumpulan data berupa objek Python kompleks (QuerySet).
+4. Fungsi view memanggil serializer untuk mengubah QuerySet tersebut menjadi string berformat JSON.
+5. String JSON tersebut dikemas ke dalam objek HttpResponse dengan header content_type="application/json" dan dikirimkan kembali sebagai balasan (response) ke client.
+
+* Tujuan serialization adalah karena protokol HTTP hanya dapat mengirimkan dan menerima teks atau byte stream. Objek model Django (QuerySet) adalah tipe data kompleks di Python yang berisi referensi memori dan metode spesifik yang tidak dapat dipahami oleh jaringan atau client. Proses serialization berfungsi sebagai penerjemah yang memecah (mengekstrak) nilai-nilai dari objek kompleks tersebut, lalu mengubahnya menjadi format teks standar (JSON/XML) agar bisa ditransmisikan lewat HTTP dan direkonstruksi kembali oleh peramban pengguna.
+
+---
+
+## 🤖 Pernyataan Penggunaan AI (AI Disclosure)
+
+Dalam pengerjaan Tugas 3 ini, saya memanfaatkan asisten kecerdasan buatan dengan rincian transparansi sebagai berikut:
+
+* **Alat yang Digunakan:** Google Gemini
+* **Strategi Prompting:**
+  * Memastikan pemahaman AI dengan memberikan kode yang sudah dibuat sejauh ini.
+  * Langsung to-the-point agar tidak menghabiskan banyak token.
+* **Bagian Spesifik yang Dibantu:**
+  * Menambahkan fitur, seperti create, read, update, dan delete untuk model Education.
+  * Memodifikasi halaman tampilan Education supaya memiliki fitur create, update, dan delete.
+* **Log Obrolan / Riwayat:** [Tautan log chat atau ringkasan obrolan](https://share.gemini.google/6WKWUn6rLnLt)
+
+### Analisis Kritis Keterbatasan AI & Perbaikan Manual
+Meskipun AI sangat membantu, terutama dalam mempercepat proses debugging tampilan CSS dan menjelaskan logika backend Django, saya menemukan beberapa keterbatasan. AI tidak selalu memiliki konteks menyeluruh tentang proyek saya kecuali saya secara spesifik menyalin kodenya (misalnya saat terjadi bentrok struktur class pada HTML Education dan Experience). Oleh karena itu, saya tetap harus menganalisis letak elemen secara manual dan tidak bisa sekadar melakukan copy-paste. Selain itu, AI terkadang menyarankan implementasi fitur tambahan yang melenceng dari spesifikasi atau batasan tugas dasar, sehingga saya sebagai developer harus tetap memfilter dan memutuskan saran mana yang benar-benar esensial dan aman untuk diimplementasikan tanpa merusak aplikasi.
