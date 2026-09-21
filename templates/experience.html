@@ -1,4 +1,4 @@
-// TODO
+<!-- TODO -->
 
 {% extends 'base.html' %}
 
@@ -10,17 +10,15 @@
             <div class="container">
                 <p class="section-kicker">My journey so far</p>
                 
-                <!-- Bagian Header & Tombol Tambah -->
                 <div class="experience-header">
                     <h1>Experience</h1>
                     <a href="{% url 'main:create_experience' %}"
                        class="button experience-add-button">
                         <span aria-hidden="true">+</span>
-                        Tambah Experience
+                        Add Experience
                     </a>
                 </div>
 
-                <!-- Bagian Form Pencarian -->
                 <form method="get"
                       action="{% url 'main:show_experience' %}"
                       class="experience-search">
@@ -32,13 +30,11 @@
                            aria-label="Cari berdasarkan nama experience">
                     <button type="submit" class="button">Cari</button>
                 </form>
-
-                <!-- Grid Daftar Experience -->
+   
                 <div class="experience-grid">
                     {% for experience in experience_list %}
                         <article class="experience-card">
                             
-                            <!-- Menampilkan Thumbnail (jika ada) -->
                             {% if experience.thumbnail %}
                                 <img src="{{ experience.thumbnail }}"
                                      alt="Gambar {{ experience.title }}"
@@ -50,7 +46,6 @@
                             </span>
                             <h2>{{ experience.title }}</h2>
 
-                            <!-- Logika Tanggal (Ongoing / Berakhir) -->
                             {% if experience.is_ongoing %}
                                 <p class="experience-status"> {{ experience.started_at|date:"F Y" }} &mdash; Present</p>
                             {% else %}
@@ -61,7 +56,6 @@
                                 {{ experience.description }}
                             </p>
                             
-                            <!-- Bagian Tombol Aksi (Termasuk Pop-up Hapus) -->
                             <div class="experience-card-actions">
                                 <div class="experience-actions">
                                     {% include "components/experience_delete_modal.html" with experience=experience %}
@@ -70,11 +64,10 @@
                             
                         </article>
                     {% empty %}
-                        <!-- Menampilkan Pesan Berbeda Tergantung Status Pencarian -->
                         {% if title_query %}
-                            <p class="empty-state">Tidak ada experience dengan nama tersebut.</p>
+                            <p class="empty-state">No experience found with that name.</p>
                         {% else %}
-                            <p class="empty-state">Belum ada experience yang ditambahkan.</p>
+                            <p class="empty-state">No experience has been added yet.</p>
                         {% endif %}
                     {% endfor %}
                 </div>
