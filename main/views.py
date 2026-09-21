@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
 
 from main.models import Experience, Education
-from main.forms import ExperienceForm
+from main.forms import ExperienceForm, EducationForm
 
 def show_main(request):
     context = {
@@ -18,36 +18,43 @@ def show_main(request):
     return render(request, "index.html", context)
 
 def show_experience(request):
-    # 1. Mengambil response JSON dari fungsi get_experiences_json
     json_response = get_experiences_json(request)
 
-    # 2. Mengubah teks JSON kembali menjadi objek Python (Deserialisasi)
     experiences = serializers.deserialize(
         "json",
         json_response.content.decode("utf-8"),
     )
     
-    # 3. Mengambil objek model aslinya dari hasil deserialisasi
     experiences = [experience.object for experience in experiences]
     
-    # 4. Menangkap query pencarian dari URL (jika ada)
     title_query = request.GET.get("title", "").strip()
 
-    # 5. Membungkus data ke dalam context untuk dikirim ke HTML
     context = {
         "name": "Jonathan Sebastian Sindhu", 
         "experience_list": experiences,
         "title_query": title_query,
     }
     
-    # 6. Merender file HTML dengan membawa data context
     return render(request, "experience.html", context)
 
 def show_education(request):
+    json_response = get_educations_json(request)
+
+    educations = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    
+    educations = [education.object for education in educations]
+    
+    institution_name_query = request.GET.get("institution_name", "").strip()
+
     context = {
-        "name": "Jonathan Sebastian Sindhu",
-        "education_list": Education.objects.all(),
+        "name": "Jonathan Sebastian Sindhu", 
+        "education_list": educations,
+        "institution_name_query": institution_name_query,
     }
+
     return render(request, "education.html", context)
 
 def create_experience(request):
@@ -77,15 +84,64 @@ def get_experiences_json(request):
     return HttpResponse(experiences_json, content_type="application/json")
 
 def delete_experience(request, experience_id):
-    # Mencari data Experience berdasarkan ID, jika tidak ada akan muncul error 404
     experience = get_object_or_404(Experience, pk=experience_id)
 
-    # Mengecek apakah aksi ini benar-benar dikirim lewat metode POST (biasanya dari form/tombol hapus)
     if request.method == "POST":
         experience.delete()
         messages.success(request, "Experience deleted successfully!")
         return redirect("main:show_experience")
 
-    # Jika ada yang iseng mengakses URL hapus secara manual lewat address bar (metode GET), 
-    # langsung kembalikan ke halaman daftar experience tanpa menghapus data
     return redirect("main:show_experience")
+
+def create_education(request):
+    form = EducationForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "New education added!")
+        return redirect("main:show_education")
+
+    context = {
+        "name": "Jonathan Sebastian Sindhu",
+        "form": form,
+        "is_update": False,
+    }
+    return render(request, "education_form.html", context)
+
+def get_educations_json(request):
+    institution_query = request.GET.get("institution_name", "").strip()
+    
+    educations = Education.objects.all()
+
+    if institution_query:
+        educations = educations.filter(institution_name__icontains=institution_query)
+
+    education_json = serializers.serialize("json", educations)
+    return HttpResponse(education_json, content_type="application/json")
+
+def delete_education(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+
+    if request.method == "POST":
+        education.delete()
+        messages.success(request, "Education deleted successfully!")
+        return redirect("main:show_education")
+
+    return redirect("main:show_education")
+
+def update_education(request, education_id):
+    education = get_object_or_404(Education, id=education_id)
+
+    form = EducationForm(request.POST or None, instance=education)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Education updated successfully!")
+        return redirect('main:show_education')
+
+    context = {
+        "name": "Jonathan Sebastian Sindhu",
+        "form": form,
+        "is_update": True,
+    }
+    return render(request, "education_form.html", context)
