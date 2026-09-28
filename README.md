@@ -176,3 +176,31 @@ Dalam pengerjaan Tugas 3 ini, saya memanfaatkan asisten kecerdasan buatan dengan
 
 ### Analisis Kritis Keterbatasan AI & Perbaikan Manual
 Meskipun AI sangat membantu, terutama dalam mempercepat proses debugging tampilan CSS dan menjelaskan logika backend Django, saya menemukan beberapa keterbatasan. AI tidak selalu memiliki konteks menyeluruh tentang proyek saya kecuali saya secara spesifik menyalin kodenya (misalnya saat terjadi bentrok struktur class pada HTML Education dan Experience). Oleh karena itu, saya tetap harus menganalisis letak elemen secara manual dan tidak bisa sekadar melakukan copy-paste. Selain itu, AI terkadang menyarankan implementasi fitur tambahan yang melenceng dari spesifikasi atau batasan tugas dasar, sehingga saya sebagai developer harus tetap memfilter dan memutuskan saran mana yang benar-benar esensial dan aman untuk diimplementasikan tanpa merusak aplikasi.
+
+---
+
+### Minggu 4 (Tutorial 04 & Individual Assignment 4)
+* Mengimplementasikan fitur registrasi, login, dan logout menggunakan sistem autentikasi bawaan Django.
+* Memahami cara kerja serta menerapkan penggunaan session dan cookie dalam proyek web, termasuk menampilkan informasi last_login pengguna.
+* Menerapkan manajemen hak akses (authorization) dan peran pengguna di sisi server (pengunjung tanpa login, pengguna biasa, Editor, dan Superuser).
+* Menyembunyikan tombol atau kontrol aksi (create, update, delete) pada antarmuka template bagi pengguna yang tidak memiliki hak akses yang sesuai.
+* Menambahkan relasi ManyToManyField ke model User untuk fitur interaktif pemberian bintang (star), lengkap dengan logika batas maksimal satu star per pengguna dan kalkulasi total star.
+* Fitur Ekstra: Mengembangkan halaman khusus "My Favorites" menggunakan query ORM dengan filter dan ordering lanjutan untuk mengumpulkan seluruh riwayat Education dan Experience yang telah di-star oleh pengguna.
+
+---
+
+## 🤖 Pernyataan Penggunaan AI (AI Disclosure)
+
+Dalam pengerjaan Tugas 4 ini, saya memanfaatkan asisten kecerdasan buatan dengan rincian transparansi sebagai berikut:
+
+* **Alat yang Digunakan:** Google Gemini
+* **Strategi Prompting:**
+  * Memastikan pemahaman AI dengan memberikan kode yang sudah dibuat sejauh ini.
+  * Langsung to-the-point agar tidak menghabiskan banyak token.
+* **Bagian Spesifik yang Dibantu:**
+  * Memodifikasi file experience_star.html agar sesuai dengan konteks Education.
+  * Merancang arsitektur ORM dan struktur template awal untuk halaman "My Favorites" yang memisahkan data model Education dan Experience.
+* **Log Obrolan / Riwayat:** [Tautan log chat atau ringkasan obrolan](https://share.gemini.google/Xd69lL6Q8Zfp)
+
+### Analisis Kritis Keterbatasan AI & Perbaikan Manual
+Meskipun AI sangat membantu, terutama dalam mempercepat proses debugging tampilan CSS dan menjelaskan logika backend Django, saya menemukan beberapa keterbatasan. AI tidak selalu memiliki konteks menyeluruh tentang proyek saya kecuali saya secara spesifik menyalin kodenya. Maka dari itu, perlu adanya perubahan dan recheck dari manusia supaya memastikan kode hasil AI sesuai dengan keinginan kita.
