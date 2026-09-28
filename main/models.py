@@ -36,7 +36,7 @@ class Experience(models.Model):
     started_at = models.DateField()
     ended_at = models.DateField(blank=True, null=True)
     starred_by = models.ManyToManyField(
-        User, related_name="starred_projects", blank=True
+        User, related_name="starred_experiences", blank=True
     )
 
     class Meta:
@@ -56,6 +56,9 @@ class Education(models.Model):
     description = models.TextField(blank=True, null=True)
     started_at = models.DateField()
     ended_at = models.DateField()
+    starred_by = models.ManyToManyField(
+        User, related_name="starred_educations", blank=True
+    )
 
     class Meta:
         constraints = [
