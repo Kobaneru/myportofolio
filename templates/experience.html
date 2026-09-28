@@ -1,5 +1,3 @@
-<!-- TODO -->
-
 {% extends 'base.html' %}
 
 {% block title %}Experience - {{ name }}{% endblock title %}
@@ -60,16 +58,12 @@
                                 {{ experience.description }}
                             </p>
 
-                            {% include "components/experience_star.html" with project=project %}
-                            
-                            {% if user.is_superuser %}  {# Tambahkan baris ini #}
-                                <div class="experience-card-actions">
-                                    <div class="experience-actions">
-                                        {% include "components/experience_delete_modal.html" with experience=experience %}
-                                    </div>
+                            <div class="experience-card-actions">
+                                <div class="experience-actions">
+                                    {% include "components/experience_star.html" with experience=experience %}
+                                    {% if user.is_superuser %}{% include "components/experience_delete_modal.html" with experience=experience %}{% endif %}
                                 </div>
-                            {% endif %}                 {# Tambahkan baris ini #}
-                            
+                            </div>
                         </article>
                     {% empty %}
                         {% if title_query %}

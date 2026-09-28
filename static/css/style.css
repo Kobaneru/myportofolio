@@ -386,7 +386,6 @@ html {
 }
 
 .experience-status {
-    margin-bottom: 1rem;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-muted);
@@ -585,7 +584,7 @@ html {
 
 .experience-actions {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     flex-wrap: wrap;
     gap: 20px;
     margin-top: 1rem;
@@ -594,6 +593,10 @@ html {
 .experience-actions .button {
     font-size: 0.85rem;
     font-weight: 600;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .experience-card-actions {
@@ -795,7 +798,7 @@ html {
 
 .education-actions {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     flex-wrap: wrap;
     gap: 20px;
     margin-top: 1rem;
@@ -804,6 +807,10 @@ html {
 .education-actions .button {
     font-size: 0.85rem;
     font-weight: 600;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .education-delete-modal {
@@ -880,8 +887,7 @@ html {
 }
 
 .star-form {
-    display: inline;
-    padding-top: 25px;
+    display: contents;
 }
 
 .button-star {
@@ -905,6 +911,38 @@ html {
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.25);
     font-size: 0.8rem;
+}
+
+.favorites-section {
+    padding: 2rem 0;
+}
+
+.favorites-subtitle {
+    margin-bottom: 2rem;
+    color: var(--text-muted);
+}
+
+.favorites-category-title {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+.favorites-list {
+    margin-bottom: 3rem;
+}
+
+.education-header h3 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    font-weight: 700;
+    margin: 0;
+}
+
+.experience-card h3 {
+    margin: 0.5rem 0 0.25rem 0;
+    font-size: 1.25rem;
+    line-height: 1.3;
+    font-weight: 700;
 }
 
 /* Responsif Layar Ponsel */

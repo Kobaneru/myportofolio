@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Favorites - {{ name }}{% endblock title %}
+
+{% block content %}
+    <main>
+        <section class="favorites-section" id="favorites">
+            <div class="container">
+                <p class="section-kicker">Saved Items</p>
+                <div class="education-page-header">
+                    <h1>My Favorites</h1>
+                </div>
+                <p class="favorites-subtitle">
+                    Daftar riwayat pendidikan dan pengalaman yang telah kamu bintangi.
+                </p>
+
+                <!-- ================= BAGIAN EDUCATION ================= -->
+                <h2 class="favorites-category-title">
+                    Pendidikan Favorit
+                </h2>
+                <div class="education-list favorites-list">
+                    {% for education in favorite_educations %}
+                        <article class="education-card">
+                            <div class="education-header">
+                                <h3>{{ education.institution_name }}</h3>
+                                <span class="education-period">
+                                    {{ education.started_at|date:"F Y" }} &mdash; 
+                                    {% if education.ended_at %}{{ education.ended_at|date:"F Y" }}{% else %}Present{% endif %}
+                                </span>
+                            </div>
+                            
+                            {% if education.degree %}
+                                <h4 class="education-degree">{{ education.degree }}</h4>
+                            {% endif %}
+                            
+                            {% if education.description %}
+                                <p class="education-description">{{ education.description }}</p>
+                            {% endif %}
+
+                            <div class="education-card-actions">
+                                <div class="education-actions">
+                                    <form method="post" action="{% url 'main:toggle_education_star' education.id %}" class="star-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-star is-starred">
+                                            <span aria-hidden="true">★</span> Unstar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">Belum ada pendidikan favorit. Silakan telusuri dan beri bintang pada riwayat pendidikan!</p>
+                    {% endfor %}
+                </div>
+
+                <!-- ================= BAGIAN EXPERIENCE ================= -->
+                <h2 class="favorites-category-title">
+                    Pengalaman Favorit
+                </h2>
+                <div class="experience-grid">
+                    {% for experience in favorite_experiences %}
+                        <article class="experience-card">
+                            <span class="experience-category">
+                                {{ experience.get_category_display }}
+                            </span>
+                            <h3>{{ experience.title }}</h3>
+
+                            <p class="experience-status"> 
+                                {{ experience.started_at|date:"F Y" }} &mdash; 
+                                {% if experience.is_ongoing %}Present{% else %}{{ experience.ended_at|date:"F Y" }}{% endif %} 
+                            </p>
+
+                            <p class="experience-description">{{ experience.description }}</p>
+                            
+                            <div class="experience-card-actions">
+                                <div class="experience-actions">
+                                    <form method="post" action="{% url 'main:toggle_experience_star' experience.id %}" class="star-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button button-star is-starred">
+                                            <span aria-hidden="true">★</span> Unstar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">Belum ada pengalaman favorit. Silakan telusuri dan beri bintang pada pengalaman menarik!</p>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </section>
+    </main>
+{% endblock content %}

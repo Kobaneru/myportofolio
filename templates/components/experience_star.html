@@ -1,4 +1,4 @@
-<form method="post" action="{% url 'main:toggle_star' experience.id %}" class="star-form">
+<form method="post" action="{% url 'main:toggle_experience_star' experience.id %}" class="star-form">
     {% csrf_token %}
     <button type="submit"
             class="button button-star{% if user in experience.starred_by.all %} is-starred{% endif %}"
