@@ -56,10 +56,13 @@ def show_education(request):
     
     institution_name_query = request.GET.get("institution_name", "").strip()
 
+    is_editor = is_editor_user(request.user)
+
     context = {
         "name": "Jonathan Sebastian Sindhu", 
         "education_list": educations,
         "institution_name_query": institution_name_query,
+        "is_editor": is_editor,
     }
 
     return render(request, "education.html", context)
@@ -137,7 +140,9 @@ def get_educations_json(request):
     if institution_query:
         educations = educations.filter(institution_name__icontains=institution_query)
 
-    education_json = serializers.serialize("json", educations)
+    education_json = serializers.serialize(
+        "json", educations, use_natural_foreign_keys=True
+    )
     return HttpResponse(education_json, content_type="application/json")
 
 @login_required(login_url="/login/")  # Tambahkan baris ini
@@ -156,7 +161,7 @@ def delete_education(request, education_id):
 
 @login_required(login_url="/login/")  # Tambahkan baris ini
 def update_education(request, education_id):
-    if not request.user.is_superuser:
+    if not (request.user.is_superuser or is_editor_user(request.user)):
         raise PermissionDenied
 
     education = get_object_or_404(Education, id=education_id)
@@ -212,7 +217,7 @@ def logout_user(request):
     return response
 
 @login_required(login_url="/login/")
-def toggle_star(request, experience_id):
+def toggle_experience_star(request, experience_id):
     experience = get_object_or_404(Experience, pk=experience_id)
 
     if request.method == "POST":
@@ -222,3 +227,33 @@ def toggle_star(request, experience_id):
             experience.starred_by.add(request.user)
 
     return redirect("main:show_experience")
+
+@login_required(login_url="/login/")
+def toggle_education_star(request, education_id):
+    education = get_object_or_404(Education, pk=education_id)
+
+    if request.method == "POST":
+        if request.user in education.starred_by.all():
+            education.starred_by.remove(request.user)
+        else:
+            education.starred_by.add(request.user)
+
+    return redirect("main:show_education")
+
+def is_editor_user(user):
+    return user.is_authenticated and user.groups.filter(name='Editor').exists()
+
+@login_required(login_url='/login/')
+def show_favorites(request):
+    # Mengambil data Education dan Experience yang di-star oleh user yang sedang login
+    # Kita menggunakan order_by('-started_at') untuk menjaga urutan kronologis terbalik
+    favorite_educations = Education.objects.filter(starred_by=request.user).order_by('-started_at')
+    favorite_experiences = Experience.objects.filter(starred_by=request.user).order_by('-started_at')
+    
+    context = {
+        'name': 'Jonathan Sebastian Sindhu',
+        'favorite_educations': favorite_educations,
+        'favorite_experiences': favorite_experiences,
+    }
+    
+    return render(request, "favorites.html", context)
