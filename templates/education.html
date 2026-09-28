@@ -7,14 +7,18 @@
         <section class="education-section" id="education">
             <div class="container">
                 <p class="section-kicker">Academic Background</p>
-                
+                {% for message in messages %}
+                    <p class="form-message">{{ message }}</p>
+                {% endfor %}
                 <div class="education-page-header">
                     <h1>Education</h1>
-                    <a href="{% url 'main:create_education' %}"
-                       class="button education-add-button">
-                        <span aria-hidden="true">+</span>
-                        Add Education
-                    </a>
+                    {% if user.is_superuser %}  {# Tambahkan baris ini #}
+                        <a href="{% url 'main:create_education' %}"
+                        class="button education-add-button">
+                            <span aria-hidden="true">+</span>
+                            Add Education
+                        </a>
+                    {% endif %}                 {# Tambahkan baris ini #}
                 </div>
 
                 <form method="get"
@@ -49,12 +53,14 @@
                                 </p>
                             {% endif %}
 
-                            <div class="education-card-actions">
-                                <div class="education-actions">
-                                    <a href="{% url 'main:update_education' education.id %}" class="button button-secondary">Update</a>
-                                    {% include "components/education_delete_modal.html" with education=education %}
+                            {% if user.is_superuser %}  {# Tambahkan baris ini #}
+                                <div class="education-card-actions">
+                                    <div class="education-actions">
+                                        <a href="{% url 'main:update_education' education.id %}" class="button button-secondary">Update</a>
+                                        {% include "components/education_delete_modal.html" with education=education %}
+                                    </div>
                                 </div>
-                            </div>
+                            {% endif %}                 {# Tambahkan baris ini #}
                         </article>
                     {% empty %}
                         {% if institution_query %}

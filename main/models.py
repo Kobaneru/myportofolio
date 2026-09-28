@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User  # Tambahkan baris ini
 
 class Achievement(models.Model):
     title = models.CharField(max_length=200)
@@ -34,6 +35,9 @@ class Experience(models.Model):
     thumbnail = models.URLField(blank=True, null=True)
     started_at = models.DateField()
     ended_at = models.DateField(blank=True, null=True)
+    starred_by = models.ManyToManyField(
+        User, related_name="starred_projects", blank=True
+    )
 
     class Meta:
         ordering = ['-started_at']
