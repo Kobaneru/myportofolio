@@ -1,0 +1,68 @@
+{# Trigger tombol edit pada setiap card #}
+<button
+  type="button"
+  class="button button-secondary"
+  popovertarget="edit-experience-{{ experience.id }}"
+  aria-label="Edit {{ experience.title }}"
+  title="Edit experience"
+>
+  Edit
+</button>
+
+{# Modal berisi form edit; di-submit lewat AJAX berdasarkan data-experience-id #}
+<div
+  id="edit-experience-{{ experience.id }}"
+  class="experience-modal"
+  popover="auto"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="edit-experience-title-{{ experience.id }}"
+>
+  <button
+    type="button"
+    class="experience-modal__backdrop"
+    popovertarget="edit-experience-{{ experience.id }}"
+    popovertargetaction="hide"
+    aria-label="Tutup form edit experience"
+  ></button>
+
+  <div class="experience-modal__content">
+    <button
+      type="button"
+      class="experience-modal__close"
+      popovertarget="edit-experience-{{ experience.id }}"
+      popovertargetaction="hide"
+      aria-label="Tutup form edit experience"
+    >
+      x
+    </button>
+
+    <h2 id="edit-experience-title-{{ experience.id }}">Edit Experience</h2>
+
+    <form
+      class="experience-form js-update-experience-form"
+      data-experience-id="{{ experience.id }}"
+      data-popover-id="edit-experience-{{ experience.id }}"
+    >
+      {% csrf_token %} {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        <p class="form-error" data-error-for="{{ field.name }}" hidden></p>
+      </div>
+      {% endfor %}
+
+      <div class="experience-modal__actions">
+        <button
+          type="button"
+          class="button button-secondary"
+          popovertarget="edit-experience-{{ experience.id }}"
+          popovertargetaction="hide"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="button">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>

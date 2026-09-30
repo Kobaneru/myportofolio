@@ -1,0 +1,68 @@
+{# Trigger tombol: membuka modal "Add Experience" #}
+<button
+  type="button"
+  class="button experience-add-button"
+  popovertarget="add-experience-modal"
+  aria-label="Add new experience"
+>
+  <span aria-hidden="true">+</span>
+  Add Experience
+</button>
+
+{# Modal berisi form yang di-submit melalui AJAX (tanpa reload halaman) #}
+<div
+  id="add-experience-modal"
+  class="experience-modal"
+  popover="auto"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="add-experience-title"
+>
+  <button
+    type="button"
+    class="experience-modal__backdrop"
+    popovertarget="add-experience-modal"
+    popovertargetaction="hide"
+    aria-label="Tutup form tambah experience"
+  ></button>
+
+  <div class="experience-modal__content">
+    <button
+      type="button"
+      class="experience-modal__close"
+      popovertarget="add-experience-modal"
+      popovertargetaction="hide"
+      aria-label="Tutup form tambah experience"
+    >
+      x
+    </button>
+
+    <h2 id="add-experience-title">Add New Experience</h2>
+
+    <form
+      id="add-experience-form"
+      class="experience-form"
+      data-popover-id="add-experience-modal"
+    >
+      {% csrf_token %} {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        <p class="form-error" data-error-for="{{ field.name }}" hidden></p>
+      </div>
+      {% endfor %}
+
+      <div class="experience-modal__actions">
+        <button
+          type="button"
+          class="button button-secondary"
+          popovertarget="add-experience-modal"
+          popovertargetaction="hide"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="button">Add Experience</button>
+      </div>
+    </form>
+  </div>
+</div>

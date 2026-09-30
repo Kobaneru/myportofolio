@@ -1,12 +1,15 @@
 from django.contrib import messages
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 import datetime
 from django.contrib.auth.decorators import login_required  # Tambahkan baris ini
 from django.core.exceptions import PermissionDenied        # Tambahkan baris ini
+from django.template.loader import render_to_string
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from main.models import Experience, Education
 from main.forms import ExperienceForm, EducationForm
@@ -25,24 +28,17 @@ def show_main(request):
     return render(request, "index.html", context)
 
 def show_experience(request):
-    json_response = get_experiences_json(request)
-
-    experiences = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    
-    experiences = [experience.object for experience in experiences]
-    
     title_query = request.GET.get("title", "").strip()
 
     context = {
         "name": "Jonathan Sebastian Sindhu", 
-        "experience_list": experiences,
         "title_query": title_query,
+        # Form kosong dipakai oleh modal "Add Experience" (submit via AJAX)
+        "form": ExperienceForm(),
     }
-    
+
     return render(request, "experience.html", context)
+
 
 def show_education(request):
     json_response = get_educations_json(request)
@@ -62,16 +58,19 @@ def show_education(request):
         "name": "Jonathan Sebastian Sindhu", 
         "education_list": educations,
         "institution_name_query": institution_name_query,
+        # Alias agar template dapat memakai {{ institution_query }} pada empty state
+        "institution_query": institution_name_query,
         "is_editor": is_editor,
     }
 
     return render(request, "education.html", context)
 
+
 @login_required(login_url="/login/")  # Tambahkan baris ini
 def create_experience(request):
     if not request.user.is_superuser:
         raise PermissionDenied
-    
+
     form = ExperienceForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -87,17 +86,34 @@ def create_experience(request):
 
 def get_experiences_json(request):
     title_query = request.GET.get("title", "").strip()
-    experiences = Experience.objects.all()
+    experiences = Experience.objects.prefetch_related('starred_by').all()
 
-    # Jika ada pencarian berdasarkan judul, filter datanya
     if title_query:
         experiences = experiences.filter(title__icontains=title_query)
 
-    # Ubah data queryset menjadi format JSON
-    experiences_json = serializers.serialize(
-        "json", experiences, use_natural_foreign_keys=True
-    )
-    return HttpResponse(experiences_json, content_type="application/json")
+    # Konstruksi data JSON secara manual agar bisa menyisipkan logika Star
+    data = []
+    for experience in experiences:
+        starred_users = experience.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(experience.id),
+            "fields": {
+                "title": experience.title,
+                "description": experience.description,
+                "category": experience.category,
+                "thumbnail": experience.thumbnail,
+                "started_at": experience.started_at,
+                "ended_at": experience.ended_at,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+    
+    return JsonResponse(data, safe=False)
 
 @login_required(login_url="/login/")  # Tambahkan baris ini
 def delete_experience(request, experience_id):
@@ -112,6 +128,148 @@ def delete_experience(request, experience_id):
         return redirect("main:show_experience")
 
     return redirect("main:show_experience")
+
+
+def _serialize_experience(request, experience):
+    """Membantu mengubah satu objek Experience menjadi dict siap-JSON."""
+    return {
+        "id": str(experience.id),
+        "title": experience.title,
+        "category": experience.get_category_display(),
+        "thumbnail": experience.thumbnail or "",
+        "is_ongoing": experience.is_ongoing,
+        "started_at": experience.started_at.strftime("%B %Y") if experience.started_at else "",
+        "ended_at": experience.ended_at.strftime("%B %Y") if experience.ended_at else "",
+        "description": experience.description,
+        "star_html": render_to_string(
+            "components/experience_star.html",
+            {"experience": experience},
+            request=request,
+        ),
+        "delete_html": "",
+        "edit_html": "",
+    }
+
+
+def show_json(request):
+    """Menampilkan seluruh data Experience dalam format JSON."""
+    title_query = request.GET.get("title", "").strip()
+    experiences = Experience.objects.prefetch_related("starred_by").all()
+
+    if title_query:
+        experiences = experiences.filter(title__icontains=title_query)
+
+    data = [_serialize_experience(request, experience) for experience in experiences]
+
+    if request.user.is_superuser:
+        for item, experience in zip(data, experiences):
+            item["delete_html"] = render_to_string(
+                "components/experience_delete_modal.html",
+                {"experience": experience},
+                request=request,
+            )
+            item["edit_html"] = render_to_string(
+                "components/experience_edit_modal.html",
+                {"experience": experience, "form": ExperienceForm(instance=experience)},
+                request=request,
+            )
+
+    return JsonResponse(data, safe=False)
+
+
+def show_json_by_id(request, id):
+    """Menampilkan satu data Experience berdasarkan id dalam format JSON."""
+    experience = Experience.objects.filter(pk=id).first()
+
+    if experience is None:
+        return JsonResponse(
+            {"status": "error", "message": "Experience tidak ditemukan"},
+            status=404,
+        )
+
+    return JsonResponse(_serialize_experience(request, experience))
+
+
+@csrf_exempt
+@require_POST
+def create_experience_ajax(request):
+    """Menambahkan Experience baru melalui AJAX."""
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return JsonResponse(
+            {"status": "error", "message": "Hanya admin yang boleh menambah data"},
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+
+    if form.is_valid():
+        form.save()
+        return JsonResponse(
+            {"status": "success", "message": "New experience added!"},
+            status=201,
+        )
+
+    return JsonResponse(
+        {"status": "error", "message": "Data tidak valid", "errors": form.errors},
+        status=400,
+    )
+
+
+@csrf_exempt
+@require_POST
+def delete_experience_ajax(request, id):
+    """Menghapus Experience melalui AJAX."""
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return JsonResponse(
+            {"status": "error", "message": "Hanya admin yang boleh menghapus data"},
+            status=403,
+        )
+
+    experience = Experience.objects.filter(pk=id).first()
+
+    if experience is None:
+        return JsonResponse(
+            {"status": "error", "message": "Experience tidak ditemukan"},
+            status=404,
+        )
+
+    experience.delete()
+    return JsonResponse(
+        {"status": "success", "message": "Experience berhasil dihapus"}
+    )
+
+
+@csrf_exempt
+@require_POST
+def update_experience_ajax(request, id):
+    """Memperbarui Experience melalui AJAX."""
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return JsonResponse(
+            {"status": "error", "message": "Hanya admin yang boleh mengubah data"},
+            status=403,
+        )
+
+    experience = Experience.objects.filter(pk=id).first()
+
+    if experience is None:
+        return JsonResponse(
+            {"status": "error", "message": "Experience tidak ditemukan"},
+            status=404,
+        )
+
+    form = ExperienceForm(request.POST, instance=experience)
+
+    if form.is_valid():
+        form.save()
+        return JsonResponse(
+            {"status": "success", "message": "Experience berhasil diperbarui!"}
+        )
+
+    return JsonResponse(
+        {"status": "error", "message": "Data tidak valid", "errors": form.errors},
+        status=400,
+    )
+
 
 @login_required(login_url="/login/")  # Tambahkan baris ini
 def create_education(request):
