@@ -204,3 +204,43 @@ Dalam pengerjaan Tugas 4 ini, saya memanfaatkan asisten kecerdasan buatan dengan
 
 ### Analisis Kritis Keterbatasan AI & Perbaikan Manual
 Meskipun AI sangat membantu, terutama dalam mempercepat proses debugging tampilan CSS dan menjelaskan logika backend Django, saya menemukan beberapa keterbatasan. AI tidak selalu memiliki konteks menyeluruh tentang proyek saya kecuali saya secara spesifik menyalin kodenya. Maka dari itu, perlu adanya perubahan dan recheck dari manusia supaya memastikan kode hasil AI sesuai dengan keinginan kita.
+
+---
+
+### Minggu 5 (Tutorial 05 & Individual Assignment 5)
+* Mengimplementasikan pemuatan data secara asinkron menggunakan AJAX dan fetch() API tanpa perlu me-reload halaman.
+* Menerapkan teknik debouncing pada fitur pencarian (kolom search) untuk mengoptimalkan kinerja dan membatasi request berlebih ke server.
+* Membuat form penambahan data (misalnya pada Education/Experience) di dalam elemen modal interaktif, lengkap dengan pengiriman data POST via AJAX dan penanganan header X-CSRFToken.
+* Menambahkan dan merender notifikasi toast kustom untuk memberikan feedback visual kepada pengguna (sukses/gagal) saat berinteraksi dengan form.
+* Melindungi aplikasi dari celah keamanan Cross-Site Scripting (XSS) dengan melakukan escaping data sebelum disisipkan ke DOM HTML di sisi client (JavaScript), serta pembersihan input menggunakan strip_tags di sisi server (Django Forms).
+* Memastikan seluruh manajemen hak akses dari Tugas 4 tetap terjaga dengan aman (hanya superuser yang dapat melihat modal dan mengirim data POST).
+
+---
+
+### Tugas 5
+
+1. Debouncing adalah teknik menunda eksekusi fungsi sampai tidak ada event baru selama jeda waktu tertentu. Pada pencarian AJAX, debouncing mencegah browser mengirim request untuk setiap karakter yang diketik sehingga mengurangi beban server dan jumlah request jaringan.
+
+2. `await` menunggu Promise dari `fetch()` selesai sebelum kode melanjutkan ke baris berikutnya, sehingga response dapat diproses secara berurutan dan mudah dibaca. Tanpa `await`, kode berikutnya langsung dijalankan dan variabel yang diterima masih berupa Promise, bukan hasil response yang sudah selesai.
+
+3. XSS adalah serangan ketika input berbahaya dari pengguna ditampilkan sebagai kode yang kemudian dijalankan oleh browser pengguna lain. Data AJAX/JavaScript lebih rentan ketika nilai JSON langsung dimasukkan ke `innerHTML`, karena tidak otomatis melalui escaping template Django. Oleh sebab itu, nilai Education di-escape sebelum dirender dan input baru dibersihkan di server menggunakan `strip_tags`.
+
+---
+
+## 🤖 Pernyataan Penggunaan AI (AI Disclosure)
+
+Dalam pengerjaan Tugas 5 ini, saya memanfaatkan asisten kecerdasan buatan dengan rincian transparansi sebagai berikut:
+
+* **Alat yang Digunakan:** Github Copilot (GPT-5.6 Luna)
+* **Strategi Prompting:**
+  * Memastikan pemahaman AI dengan memberikan kode yang sudah dibuat sejauh ini.
+  * Langsung to-the-point agar tidak menghabiskan banyak token.
+* **Bagian Spesifik yang Dibantu:**
+  * Membantu menelusuri alur MVT
+  * Merancang endpoint JSON dan POST AJAX
+  * Menulis logika debouncing
+  * Memeriksa perlindungan CSRF dan XSS
+* **Log Obrolan / Riwayat:** [Tautan log chat atau ringkasan obrolan](docs/copilot_prompts_ia5.md)
+
+### Analisis Kritis Keterbatasan AI & Perbaikan Manual
+Dalam pengerjaan Tugas 5 ini, saya menggunakan GitHub Copilot untuk membantu menelusuri alur MVT, merancang endpoint JSON dan POST AJAX, menulis logika debouncing, serta memeriksa perlindungan CSRF dan XSS. Kode tetap disesuaikan secara manual dengan model Education, aturan role Editor/Superuser, endpoint star, dan struktur template proyek ini. Validasi akhir dilakukan dengan diagnostic editor, `python manage.py check`, dan test Django.
