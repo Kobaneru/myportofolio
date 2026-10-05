@@ -41,26 +41,17 @@ def show_experience(request):
 
 
 def show_education(request):
-    json_response = get_educations_json(request)
-
-    educations = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-    
-    educations = [education.object for education in educations]
-    
     institution_name_query = request.GET.get("institution_name", "").strip()
 
     is_editor = is_editor_user(request.user)
 
     context = {
         "name": "Jonathan Sebastian Sindhu", 
-        "education_list": educations,
         "institution_name_query": institution_name_query,
         # Alias agar template dapat memakai {{ institution_query }} pada empty state
         "institution_query": institution_name_query,
         "is_editor": is_editor,
+        "form": EducationForm(),
     }
 
     return render(request, "education.html", context)
@@ -292,16 +283,87 @@ def create_education(request):
 
 def get_educations_json(request):
     institution_query = request.GET.get("institution_name", "").strip()
-    
-    educations = Education.objects.all()
+    educations = Education.objects.prefetch_related('starred_by').all()
 
     if institution_query:
         educations = educations.filter(institution_name__icontains=institution_query)
 
-    education_json = serializers.serialize(
-        "json", educations, use_natural_foreign_keys=True
-    )
-    return HttpResponse(education_json, content_type="application/json")
+    # Konstruksi data JSON secara manual agar bisa menyisipkan logika Star
+    data = []
+    for education in educations:
+        starred_users = education.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(education.id),
+            "fields": {
+                "institution_name": education.institution_name,
+                "degree": education.degree,
+                "description": education.description,
+                "started_at": education.started_at,
+                "ended_at": education.ended_at,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+                "edit_html": render_to_string(
+                    "components/education_edit_modal.html",
+                    {
+                        "education": education,
+                        "form": EducationForm(instance=education),
+                    },
+                    request=request,
+                ) if request.user.is_superuser or is_editor_user(request.user) else "",
+                "delete_html": render_to_string(
+                    "components/education_delete_modal.html",
+                    {"education": education},
+                    request=request,
+                ) if request.user.is_superuser else "",
+            }
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+@require_POST
+def create_education_ajax(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Hanya pemilik portofolio yang dapat menambahkan education."},
+            status=403,
+        )
+
+    form = EducationForm(request.POST)
+    if form.is_valid():
+        education = form.save()
+        return JsonResponse(
+            {"message": "Education berhasil ditambahkan.", "pk": str(education.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+@require_POST
+def update_education_ajax(request, education_id):
+    if not request.user.is_authenticated or not (
+        request.user.is_superuser or is_editor_user(request.user)
+    ):
+        return JsonResponse(
+            {"message": "Hanya Superuser atau Editor yang dapat mengubah education."},
+            status=403,
+        )
+
+    education = get_object_or_404(Education, pk=education_id)
+    form = EducationForm(request.POST, instance=education)
+    if form.is_valid():
+        form.save()
+        return JsonResponse(
+            {"message": "Education berhasil diperbarui.", "pk": str(education.id)},
+            status=200,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
 @login_required(login_url="/login/")  # Tambahkan baris ini
 def delete_education(request, education_id):

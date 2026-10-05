@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.forms import ModelForm, TextInput, Textarea, URLInput, Select, DateInput
+from django.utils.html import strip_tags
 from main.models import Experience, Education
 
 class ExperienceForm(ModelForm):
@@ -106,3 +108,18 @@ class EducationForm(ModelForm):
                 }
             ),
         }
+
+    def _clean_text_field(self, field_name, required=False):
+        value = strip_tags(self.cleaned_data.get(field_name) or "").strip()
+        if required and not value:
+            raise ValidationError("Field ini tidak boleh kosong setelah tag HTML dihapus.")
+        return value
+
+    def clean_institution_name(self):
+        return self._clean_text_field("institution_name", required=True)
+
+    def clean_degree(self):
+        return self._clean_text_field("degree")
+
+    def clean_description(self):
+        return self._clean_text_field("description")
