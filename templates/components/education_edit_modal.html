@@ -1,0 +1,47 @@
+<button type="button"
+		class="button button-secondary"
+		popovertarget="edit-education-{{ education.id }}"
+		aria-label="Edit {{ education.institution_name }}"
+		title="Edit education">
+	Edit
+</button>
+
+<div id="edit-education-{{ education.id }}"
+	 class="education-form-modal"
+	 popover="auto"
+	 role="dialog"
+	 aria-modal="true"
+	 aria-labelledby="edit-education-title-{{ education.id }}">
+	<button type="button"
+			class="education-form-modal__backdrop"
+			popovertarget="edit-education-{{ education.id }}"
+			popovertargetaction="hide"
+			aria-label="Tutup form edit education"></button>
+	<div class="education-form-modal__content">
+		<button type="button"
+				class="education-form-modal__close"
+				popovertarget="edit-education-{{ education.id }}"
+				popovertargetaction="hide"
+				aria-label="Tutup form edit education">x</button>
+		<h2 id="edit-education-title-{{ education.id }}">Edit Education</h2>
+		<form class="education-form js-update-education-form"
+			  data-education-id="{{ education.id }}"
+			  data-popover-id="edit-education-{{ education.id }}">
+			{% csrf_token %}
+			{% for field in form %}
+				<div class="form-group">
+					<label for="{{ field.id_for_label }}">{{ field.label }}</label>
+					{{ field }}
+					<p class="form-error" data-error-for="{{ field.name }}" hidden></p>
+				</div>
+			{% endfor %}
+			<div class="education-form-modal__actions">
+				<button type="button"
+						class="button button-secondary"
+						popovertarget="edit-education-{{ education.id }}"
+						popovertargetaction="hide">Cancel</button>
+				<button type="submit" class="button">Save Changes</button>
+			</div>
+		</form>
+	</div>
+</div>

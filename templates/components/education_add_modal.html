@@ -1,0 +1,48 @@
+<button type="button"
+		class="button education-add-button"
+		popovertarget="add-education-modal"
+		aria-label="Add new education">
+	<span aria-hidden="true">+</span>
+	Add Education
+</button>
+
+<div id="add-education-modal"
+	 class="education-form-modal"
+	 popover="auto"
+	 role="dialog"
+	 aria-modal="true"
+	 aria-labelledby="add-education-title">
+	<button type="button"
+			class="education-form-modal__backdrop"
+			popovertarget="add-education-modal"
+			popovertargetaction="hide"
+			aria-label="Tutup form tambah education"></button>
+	<div class="education-form-modal__content">
+		<button type="button"
+				class="education-form-modal__close"
+				popovertarget="add-education-modal"
+				popovertargetaction="hide"
+				aria-label="Tutup form tambah education">x</button>
+		<h2 id="add-education-title">Add New Education</h2>
+		<form id="add-education-form"
+			  method="post"
+			  action="{% url 'main:create_education_ajax' %}"
+			  class="education-form">
+			{% csrf_token %}
+			{% for field in form %}
+				<div class="form-group">
+					<label for="{{ field.id_for_label }}">{{ field.label }}</label>
+					{{ field }}
+					<p class="form-error" data-error-for="{{ field.name }}" hidden></p>
+				</div>
+			{% endfor %}
+			<div class="education-form-modal__actions">
+				<button type="button"
+						class="button button-secondary"
+						popovertarget="add-education-modal"
+						popovertargetaction="hide">Cancel</button>
+				<button type="submit" class="button">Add Education</button>
+			</div>
+		</form>
+	</div>
+</div>
