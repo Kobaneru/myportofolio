@@ -1,0 +1,47 @@
+{# object_id selects a server-rendered POST form; otherwise AJAX fills one reusable modal. #}
+{% with suffix=object_id|default:"modal" %}
+{% if object_id %}
+<button type="button"
+        class="button button-danger"
+        popovertarget="delete-{{ resource }}-{{ suffix }}"
+        aria-label="Delete {{ object_name }}">Delete</button>
+{% endif %}
+<div id="delete-{{ resource }}-{{ suffix }}"
+     class="{{ resource }}-delete-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="delete-{{ resource }}-title-{{ suffix }}">
+    <button type="button"
+            class="{{ resource }}-delete-modal__backdrop"
+            popovertarget="delete-{{ resource }}-{{ suffix }}"
+            popovertargetaction="hide"
+            aria-label="Tutup konfirmasi hapus"></button>
+    <div class="{{ resource }}-delete-modal__content">
+        <button type="button"
+                class="{{ resource }}-delete-modal__close"
+                popovertarget="delete-{{ resource }}-{{ suffix }}"
+                popovertargetaction="hide"
+                aria-label="Tutup konfirmasi hapus">&times;</button>
+        <h2 id="delete-{{ resource }}-title-{{ suffix }}">Delete {{ label }}?</h2>
+        <p>Are you sure you want to delete
+            <strong{% if not object_id %} id="delete-{{ resource }}-name"{% endif %}>{{ object_name }}</strong>?
+        </p>
+        <form {% if object_id %}
+                  method="post" action="{{ delete_url }}"
+                  data-{{ resource }}-id="{{ object_id }}"
+                  data-popover-id="delete-{{ resource }}-{{ suffix }}"
+              {% else %}
+                  id="delete-{{ resource }}-form"
+              {% endif %}
+              class="{{ resource }}-delete-modal__actions{% if object_id %} {{ resource }}-delete-form{% if resource == 'experience' %} js-delete-experience-form{% endif %}{% endif %}">
+            {% csrf_token %}
+            <button type="button"
+                    class="button button-secondary"
+                    popovertarget="delete-{{ resource }}-{{ suffix }}"
+                    popovertargetaction="hide">Cancel</button>
+            <button type="submit" class="button button-danger">Yes, Delete</button>
+        </form>
+    </div>
+</div>
+{% endwith %}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Education - {{ name }}{% endblock title %}
 
@@ -13,7 +14,10 @@
                 <div class="education-page-header">
                     <h1>Education</h1>
                     {% if user.is_superuser %}
-                        {% include "components/education_add_modal.html" %}
+                        <button type="button" class="button education-add-button"
+                                popovertarget="add-education-modal" aria-label="Add new education">
+                            <span aria-hidden="true">+</span> Add Education
+                        </button>
                     {% endif %}
                 </div>
 
@@ -47,170 +51,200 @@
             </div>
         </section>
     </main>
+    {% if user.is_superuser or is_editor %}
+        {% include "components/education_add_modal.html" %}
+    {% endif %}
 
-<script>
-    const EDUCATIONS_ENDPOINT = "{% url 'main:get_educations_json' %}";
-    const CREATE_EDUCATION_ENDPOINT = "{% url 'main:create_education_ajax' %}";
-    const UPDATE_EDUCATION_ENDPOINT = "{% url 'main:update_education_ajax' '00000000-0000-0000-0000-000000000000' %}";
+    {% if user.is_superuser %}
+        {% include "components/delete_modal.html" with resource="education" label="Education" %}
+    {% endif %}
+
+    {% csrf_token %}
+    <script src="{% static 'js/portfolio.js' %}"></script>
+    <script>
+    const { escapeHtml, formatDate, getCookie } = PortfolioUI;
+    const BASE_EDUCATIONS_ENDPOINT = "{% url 'api:education-list' %}";
+    const DETAIL_EDUCATION_ENDPOINT = "{% url 'api:education-detail' '00000000-0000-0000-0000-000000000000' %}";
+    const STAR_EDUCATION_ENDPOINT = "{% url 'api:education-star' '00000000-0000-0000-0000-000000000000' %}";
     const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
     const IS_EDITOR = "{{ is_editor|yesno:'true,false' }}" === "true";
-    const searchForm = document.getElementById("education-search-form");
-    const searchInput = document.getElementById("search-input");
-    const loadingState = document.getElementById("loading");
-    const errorState = document.getElementById("error");
-    const emptyState = document.getElementById("empty");
-    const gridContainer = document.getElementById("grid");
-    const educationForm = document.getElementById("add-education-form");
-    let fetchAbortController;
+    const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+
+    const gridContainer = document.getElementById('grid');
+    const searchForm = document.getElementById('education-search-form');
+    const searchInput = document.getElementById('search-input');
+    const educationForm = document.getElementById('add-education-form');
+    let educationsAbortController;
     let searchDebounceTimer;
+    let editingEducationId = null;
 
-    function escapeHtml(value) {
-        return String(value ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#39;");
+    const clearFormErrors = () => PortfolioUI.clearFormErrors(educationForm);
+    const showFormErrors = data => PortfolioUI.showFormErrors(educationForm, data);
+
+    function prepareEducationForm(education = null) {
+        editingEducationId = education?.id ?? null;
+        educationForm.reset();
+        clearFormErrors();
+        if (education) {
+            for (const name of ['institution_name', 'degree', 'description', 'started_at', 'ended_at']) {
+                educationForm.elements.namedItem(name).value = education[name] ?? '';
+            }
+        }
+        document.getElementById('add-education-title').textContent = education
+            ? 'Update Education' : 'Tambah Education Baru';
+        educationForm.querySelector('button[type="submit"]').textContent = education
+            ? 'Update Education' : 'Add Education';
     }
 
-    function formatEducationDate(value) {
-        if (!value) return "";
-        const date = new Date(`${value}T00:00:00`);
-        return new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(date);
+    if (educationForm) {
+        document.querySelector('.education-add-button')?.addEventListener('click', () => prepareEducationForm());
     }
 
-    function displaySection(section) {
-        loadingState.classList.toggle("hide", section !== "loading");
-        errorState.classList.toggle("hide", section !== "error");
-        emptyState.classList.toggle("hide", section !== "empty");
-        gridContainer.classList.toggle("hide", section !== "grid");
-    }
+    const educationEndpoint = PortfolioUI.endpoint;
+    const displayPageSection = PortfolioUI.pageSections();
 
-    function buildEducationCardElement(item) {
-        const education = item.fields;
-        const educationId = escapeHtml(item.pk);
-        const starUrl = "{% url 'main:toggle_education_star' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", educationId);
-        const period = `${formatEducationDate(education.started_at)} - ${education.ended_at ? formatEducationDate(education.ended_at) : "Sekarang"}`;
-        const editAction = education.edit_html || "";
-        const deleteAction = education.delete_html || "";
-        const starClass = education.is_starred ? " is-starred" : "";
-        const starText = education.is_starred ? "Unstar" : "Star";
-        const starTitle = education.star_count > 0 ? `Dibintangi oleh ${escapeHtml(education.starred_by_names)}` : "Jadilah yang pertama memberi star";
-
-        const articleElement = document.createElement("article");
-        articleElement.className = "education-card";
-        articleElement.innerHTML = `
-            <div class="education-header">
-                <h2>${escapeHtml(education.institution_name)}</h2>
-                <span class="education-period">${escapeHtml(period)}</span>
-            </div>
-            <h3>${escapeHtml(education.degree)}</h3>
-            <p class="experience-description">${escapeHtml(education.description)}</p>
+    function buildEducationCardElement(education) {
+        const period = `${formatDate(education.started_at)} \u2014 ${education.ended_at
+            ? formatDate(education.ended_at) : 'Present'}`;
+        const article = document.createElement('article');
+        article.className = 'education-card';
+        const star = PortfolioUI.starButton(education, IS_AUTHENTICATED, "{% url 'main:login' %}");
+        const remove = IS_SUPERUSER
+            ? PortfolioUI.actionButton('delete', education.id, 'Delete', education.institution_name) : '';
+        const edit = (IS_SUPERUSER || IS_EDITOR)
+            ? PortfolioUI.actionButton('edit', education.id, 'Update') : '';
+        const degree = education.degree
+            ? `<h3 class="education-degree">${escapeHtml(education.degree)}</h3>` : '';
+        const description = education.description
+            ? `<p class="education-description">${escapeHtml(education.description)}</p>` : '';
+        article.innerHTML = `<div class="education-header">
+            <h2>${escapeHtml(education.institution_name)}</h2>
+            <span class="education-period">${escapeHtml(period)}</span></div>
+            ${degree}${description}
             <div class="education-card-actions"><div class="education-actions">
-                <form method="post" action="${starUrl}" class="star-form">{% csrf_token %}<button type="submit" class="button button-star${starClass}" title="${starTitle}"><span aria-hidden="true">★</span> ${starText} <span class="star-count">${escapeHtml(education.star_count)}</span></button></form>
-                ${editAction}${deleteAction}
-            </div></div>`;
-        return articleElement;
+            ${star}${edit}${remove}</div></div>`;
+        return article;
     }
 
-    async function fetchEducations(searchQuery = "") {
-        if (fetchAbortController) fetchAbortController.abort();
-        fetchAbortController = new AbortController();
-        displaySection("loading");
-        gridContainer.innerHTML = "";
-        const url = new URL(EDUCATIONS_ENDPOINT, window.location.origin);
-        if (searchQuery) url.searchParams.set("institution_name", searchQuery);
+    async function fetchEducations(searchQuery = '') {
+        if (educationsAbortController) educationsAbortController.abort();
+        const controller = new AbortController();
+        educationsAbortController = controller;
         try {
-            const response = await fetch(url, { headers: { "Accept": "application/json" }, signal: fetchAbortController.signal });
+            displayPageSection({ showLoading: true });
+            const url = new URL(BASE_EDUCATIONS_ENDPOINT, window.location.origin);
+            if (searchQuery) url.searchParams.set('institution_name', searchQuery);
+            const response = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                signal: controller.signal,
+            });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const educations = await response.json();
-            if (!educations.length) return displaySection("empty");
-            educations.forEach((item) => gridContainer.appendChild(buildEducationCardElement(item)));
-            displaySection("grid");
+            if (controller.signal.aborted) return;
+            gridContainer.replaceChildren(...educations.map(buildEducationCardElement));
+            displayPageSection({ showGrid: educations.length > 0, showEmpty: educations.length === 0 });
         } catch (error) {
-            if (error.name === "AbortError") return;
-            console.error("Gagal memuat data education:", error);
-            displaySection("error");
+            if (error.name === 'AbortError') return;
+            console.error(error);
+            displayPageSection({ showError: true });
         }
     }
 
-    function getCookie(name) {
-        const cookie = document.cookie.split("; ").find((row) => row.startsWith(`${name}=`));
-        return cookie ? decodeURIComponent(cookie.split("=").slice(1).join("=")) : "";
-    }
-
-    function showFormErrors(form, errors) {
-        form.querySelectorAll(".form-error").forEach((node) => { node.textContent = ""; node.hidden = true; });
-        Object.entries(errors || {}).forEach(([fieldName, fieldErrors]) => {
-            const node = form.querySelector(`[data-error-for="${fieldName}"]`);
-            if (node) { node.textContent = fieldErrors.map((error) => error.message).join(" "); node.hidden = false; }
-        });
-    }
+    const writeEducation = PortfolioUI.writeJSON;
 
     async function addEducation(event) {
         event.preventDefault();
-        const submitButton = educationForm.querySelector("button[type='submit']");
-        submitButton.disabled = true;
+        const button = educationForm.querySelector('button[type="submit"]');
+        if (button.disabled) return;
+        clearFormErrors();
+        button.disabled = true;
         try {
-            const response = await fetch(CREATE_EDUCATION_ENDPOINT, { method: "POST", headers: { "X-CSRFToken": getCookie("csrftoken") }, body: new FormData(educationForm) });
-            const result = await response.json().catch(() => ({}));
-            if (response.status === 201) {
-                educationForm.reset();
-                document.getElementById("add-education-modal").hidePopover();
-                showToast("Berhasil", result.message || "Education berhasil ditambahkan.", "success");
-                return fetchEducations(searchInput.value.trim());
-            }
-            showFormErrors(educationForm, result.errors);
-            const messages = Object.values(result.errors || {}).flat().map((error) => error.message);
-            showToast("Gagal", messages.join(" ") || result.message || `Terjadi kesalahan (status ${response.status}).`, "error");
-        } catch (error) {
-            console.error("Gagal menambahkan education:", error);
-            showToast("Gagal", "Tidak dapat terhubung ke server. Silakan coba lagi.", "error");
-        } finally { submitButton.disabled = false; }
-    }
-
-    if (educationForm) educationForm.addEventListener("submit", addEducation);
-    if (searchInput) searchInput.addEventListener("input", () => { clearTimeout(searchDebounceTimer); searchDebounceTimer = setTimeout(() => fetchEducations(searchInput.value.trim()), 300); });
-    if (searchForm) searchForm.addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(searchDebounceTimer); fetchEducations(searchInput.value.trim()); });
-
-    document.addEventListener("submit", async (event) => {
-        const form = event.target;
-        if (form.matches(".js-update-education-form")) {
-            event.preventDefault();
-            const educationId = form.dataset.educationId;
-            const updateUrl = UPDATE_EDUCATION_ENDPOINT.replace("00000000-0000-0000-0000-000000000000", educationId);
-            try {
-                const response = await fetch(updateUrl, { method: "POST", headers: { "X-CSRFToken": getCookie("csrftoken") }, body: new FormData(form) });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    showFormErrors(form, result.errors);
-                    const messages = Object.values(result.errors || {}).flat().map((error) => error.message);
-                    showToast("Gagal", messages.join(" ") || result.message || "Education gagal diperbarui.", "error");
-                    return;
-                }
-                document.getElementById(form.dataset.popoverId).hidePopover();
-                showToast("Berhasil", result.message || "Education berhasil diperbarui.", "success");
-                await fetchEducations(searchInput.value.trim());
-            } catch (error) {
-                console.error("Gagal memperbarui education:", error);
-                showToast("Gagal", "Tidak dapat terhubung ke server. Silakan coba lagi.", "error");
-            }
-            return;
-        }
-        if (!form.matches(".star-form, .education-delete-form")) return;
-        event.preventDefault();
-        try {
-            const response = await fetch(form.action, { method: "POST", headers: { "X-CSRFToken": getCookie("csrftoken") } });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const deletePopover = document.getElementById(form.dataset.popoverId);
-            if (deletePopover && deletePopover.matches(":popover-open")) deletePopover.hidePopover();
-            showToast("Berhasil", "Education berhasil dihapus.", "success");
+            const fields = new FormData(educationForm);
+            const payload = Object.fromEntries([
+                'institution_name', 'degree', 'description', 'started_at', 'ended_at',
+            ].map(name => [name, fields.get(name)]));
+            const isUpdate = editingEducationId !== null;
+            const url = isUpdate
+                ? educationEndpoint(DETAIL_EDUCATION_ENDPOINT, editingEducationId)
+                : BASE_EDUCATIONS_ENDPOINT;
+            await writeEducation(url, isUpdate ? 'PATCH' : 'POST', payload);
+            educationForm.reset();
+            document.getElementById('add-education-modal').hidePopover();
+            showToast('Success', isUpdate ? 'Education updated.' : 'Education created.', 'success');
             await fetchEducations(searchInput.value.trim());
         } catch (error) {
-            showToast("Gagal", "Tidak dapat menghapus education.", "error");
+            showFormErrors(error.data);
+            showToast('Could not save education', error.message, 'error');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    if (educationForm) educationForm.addEventListener('submit', addEducation);
+
+    const deleteModal = document.getElementById('delete-education-modal');
+    const deleteForm = document.getElementById('delete-education-form');
+    if (deleteForm) deleteForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const button = deleteForm.querySelector('button[type="submit"]');
+        if (button.disabled || !deleteForm.dataset.id) return;
+        button.disabled = true;
+        try {
+            await writeEducation(educationEndpoint(DETAIL_EDUCATION_ENDPOINT, deleteForm.dataset.id), 'DELETE');
+            deleteModal.hidePopover();
+            deleteForm.dataset.id = '';
+            showToast('Success', 'Education deleted.', 'success');
+            await fetchEducations(searchInput.value.trim());
+        } catch (error) {
+            showToast('Could not delete education', error.message, 'error');
+        } finally {
+            button.disabled = false;
         }
     });
 
+
+    gridContainer.addEventListener('click', async function(event) {
+        const button = event.target.closest('button[data-action]');
+        if (!button || button.disabled) return;
+        const action = button.dataset.action;
+        if (action === 'delete') {
+            if (deleteForm.querySelector('button[type="submit"]').disabled) return;
+            deleteForm.dataset.id = button.dataset.id;
+            document.getElementById('delete-education-name').textContent = button.dataset.name;
+            deleteModal.showPopover();
+            return;
+        }
+        button.disabled = true;
+        try {
+            if (action === 'edit') {
+                const response = await fetch(educationEndpoint(DETAIL_EDUCATION_ENDPOINT, button.dataset.id), {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                prepareEducationForm(await response.json());
+                document.getElementById('add-education-modal').showPopover();
+                return;
+            }
+            if (action !== 'star') return;
+            await writeEducation(educationEndpoint(STAR_EDUCATION_ENDPOINT, button.dataset.id), 'POST');
+            showToast('Success', 'Star updated.', 'success');
+            await fetchEducations(searchInput.value.trim());
+        } catch (error) {
+            showToast('Request failed', error.message, 'error');
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => fetchEducations(searchInput.value.trim()), 300);
+    });
+    searchForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        clearTimeout(searchDebounceTimer);
+        fetchEducations(searchInput.value.trim());
+    });
     fetchEducations(searchInput.value.trim());
-</script>
+    </script>
 {% endblock content %}

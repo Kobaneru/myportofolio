@@ -8,6 +8,7 @@ import datetime
 from django.contrib.auth.decorators import login_required  # Tambahkan baris ini
 from django.core.exceptions import PermissionDenied        # Tambahkan baris ini
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from main.models import Experience, Education
@@ -142,6 +143,21 @@ def _serialize_experience(request, experience):
     }
 
 
+def _render_delete_modal(request, resource, instance, name):
+    """Keep legacy JSON delete controls on the same template as the AJAX pages."""
+    return render_to_string(
+        "components/delete_modal.html",
+        {
+            "resource": resource,
+            "label": resource.title(),
+            "object_id": instance.pk,
+            "object_name": name,
+            "delete_url": reverse(f"main:delete_{resource}", args=[instance.pk]),
+        },
+        request=request,
+    )
+
+
 def show_json(request):
     """Menampilkan seluruh data Experience dalam format JSON."""
     title_query = request.GET.get("title", "").strip()
@@ -154,10 +170,8 @@ def show_json(request):
 
     if request.user.is_superuser:
         for item, experience in zip(data, experiences):
-            item["delete_html"] = render_to_string(
-                "components/experience_delete_modal.html",
-                {"experience": experience},
-                request=request,
+            item["delete_html"] = _render_delete_modal(
+                request, "experience", experience, experience.title,
             )
             item["edit_html"] = render_to_string(
                 "components/experience_edit_modal.html",
@@ -311,10 +325,8 @@ def get_educations_json(request):
                     },
                     request=request,
                 ) if request.user.is_superuser or is_editor_user(request.user) else "",
-                "delete_html": render_to_string(
-                    "components/education_delete_modal.html",
-                    {"education": education},
-                    request=request,
+                "delete_html": _render_delete_modal(
+                    request, "education", education, education.institution_name,
                 ) if request.user.is_superuser else "",
             }
         })
