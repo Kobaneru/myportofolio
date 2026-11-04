@@ -1,4 +1,6 @@
-from django.test import TestCase
+from html.parser import HTMLParser
+
+from django.test import Client, TestCase
 from django.urls import reverse
 from datetime import date
 
@@ -48,8 +50,8 @@ class MainTest(TestCase):
         self.assertTemplateUsed(response, "experience.html")
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
         # Halaman kini memuat data lewat AJAX, jadi cek kontainer & endpoint JSON
-        self.assertContains(response, 'id="experience-grid"')
-        self.assertContains(response, reverse("main:show_json"))
+        self.assertContains(response, 'id="grid"')
+        self.assertContains(response, reverse("api:experience-list"))
 
     def test_experience_json_endpoint(self):
         response = self.client.get(reverse("main:show_json"))
@@ -95,18 +97,23 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "education.html")
-        self.assertContains(response, self.education.institution_name)
-        self.assertContains(response, self.education.degree)
-        self.assertContains(response, self.education.description)
-        self.assertContains(response, "July 2025")
-        self.assertContains(response, "August 2029")
+        self.assertContains(response, 'id="grid"')
+        self.assertContains(response, reverse("api:education-list"))
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
+        data = self.client.get(reverse("main:get_educations_json")).json()
+        education = data[0]["fields"]
+        self.assertEqual(education["institution_name"], self.education.institution_name)
+        self.assertEqual(education["degree"], self.education.degree)
+        self.assertEqual(education["description"], self.education.description)
+        self.assertEqual(education["started_at"], "2025-07-01")
+        self.assertEqual(education["ended_at"], "2029-08-01")
 
     def test_empty_education_page(self):
         Education.objects.all().delete()
         response = self.client.get(reverse("main:show_education"))
+        self.assertContains(response, 'id="empty"')
+        self.assertEqual(self.client.get(reverse("main:get_educations_json")).json(), [])
 
-        self.assertContains(response, "No education history added yet.")
 
 
 class ExperienceAjaxTest(TestCase):
@@ -125,12 +132,12 @@ class ExperienceAjaxTest(TestCase):
     def test_add_modal_only_rendered_for_superuser(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse("main:show_experience"))
-        self.assertContains(response, 'id="add-experience-form"')
+        self.assertContains(response, 'id="experience-form"')
         self.assertContains(response, 'id="add-experience-modal"')
 
         self.client.logout()
         response = self.client.get(reverse("main:show_experience"))
-        self.assertNotContains(response, 'id="add-experience-form"')
+        self.assertNotContains(response, 'id="experience-form"')
 
     def test_json_exposes_edit_html_only_for_superuser(self):
         self.client.force_login(self.admin)
@@ -262,6 +269,96 @@ class ExperienceAjaxTest(TestCase):
         response = self.client.get(reverse("main:show_experience"))
 
         # escapeHtml() wajib dipakai untuk setiap nilai dinamis dari JSON.
-        self.assertContains(response, "function escapeHtml")
+        self.assertContains(response, "/static/js/portfolio.js")
         self.assertContains(response, "escapeHtml(experience.title)")
         self.assertContains(response, "escapeHtml(experience.description)")
+
+    def test_drf_experience_create_update_and_delete(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("api:experience-list"), {
+            "title": "DRF Intern", "description": "API integration",
+            "category": "internship", "started_at": "2026-08-01", "ended_at": None,
+        }, content_type="application/json")
+        self.assertEqual(response.status_code, 201)
+        detail = reverse("api:experience-detail", args=[response.json()["id"]])
+        response = self.client.patch(detail, {"title": "Updated Intern"}, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["title"], "Updated Intern")
+        self.assertIsNone(response.json()["ended_at"])
+        response = self.client.delete(detail)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.content, b"")
+
+    def test_legacy_delete_route_uses_matching_view_parameter(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("main:delete_experience_ajax", args=[self.experience.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Experience.objects.filter(pk=self.experience.pk).exists())
+
+
+class _DeleteFormParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.forms = []
+        self.current_form = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "form":
+            self.current_form = {"attrs": attrs, "fields": {}}
+            self.forms.append(self.current_form)
+        elif tag == "input" and self.current_form is not None and "name" in attrs:
+            self.current_form["fields"][attrs["name"]] = attrs.get("value", "")
+
+    def handle_endtag(self, tag):
+        if tag == "form":
+            self.current_form = None
+
+
+class DeleteModalTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_superuser(username="modal-owner")
+        cls.experience = Experience.objects.create(
+            title="Research", description="Description", category="research",
+            started_at=date(2026, 1, 1),
+        )
+        cls.education = Education.objects.create(
+            institution_name="School", started_at=date(2020, 1, 1), ended_at=date(2024, 1, 1),
+        )
+
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.client.force_login(self.owner)
+
+    def test_ajax_pages_render_one_reusable_delete_modal(self):
+        for resource in ("experience", "education"):
+            with self.subTest(resource=resource):
+                response = self.client.get(reverse(f"main:show_{resource}"))
+                self.assertContains(response, f'id="delete-{resource}-modal"', count=1)
+                self.assertContains(response, f'id="delete-{resource}-form"', count=1)
+                self.assertContains(response, f'id="delete-{resource}-name"', count=1)
+
+    def test_legacy_json_delete_forms_remain_usable_with_csrf(self):
+        for resource, record, endpoint in (
+            ("experience", self.experience, "main:show_json"),
+            ("education", self.education, "main:get_educations_json"),
+        ):
+            with self.subTest(resource=resource):
+                response = self.client.get(reverse(endpoint))
+                self.assertEqual(response.status_code, 200)
+                item = response.json()[0]
+                markup = (item["fields"] if resource == "education" else item)["delete_html"]
+                parser = _DeleteFormParser()
+                parser.feed(markup)
+                self.assertEqual(len(parser.forms), 1)
+                form = parser.forms[0]
+                self.assertEqual(form["attrs"]["method"], "post")
+                self.assertEqual(form["attrs"]["action"], reverse(f"main:delete_{resource}", args=[record.id]))
+                self.assertEqual(form["attrs"]["data-popover-id"], f"delete-{resource}-{record.id}")
+                if resource == "experience":
+                    self.assertIn("js-delete-experience-form", form["attrs"]["class"])
+                self.assertIn("csrfmiddlewaretoken", form["fields"])
+                response = self.client.post(form["attrs"]["action"], form["fields"])
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(type(record).objects.filter(pk=record.pk).exists())
