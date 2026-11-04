@@ -3,6 +3,7 @@ from django.forms import ModelForm, TextInput, Textarea, URLInput, Select, DateI
 from django.utils.html import strip_tags
 from main.models import Experience, Education
 
+
 class ExperienceForm(ModelForm):
     class Meta:
         model = Experience
@@ -48,16 +49,26 @@ class ExperienceForm(ModelForm):
                 }
             ),
             "started_at": DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date",  # Memunculkan kalender di browser
                 }
             ),
             "ended_at": DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date",  # Memunculkan kalender di browser
                 }
             ),
         }
+    def clean_title(self):
+        title = strip_tags(self.cleaned_data["title"]).strip()
+        if not title:
+            raise ValidationError("Nama experience tidak boleh hanya berisi tag HTML.")
+        return title
+
+    def clean_description(self):
+        return strip_tags(self.cleaned_data["description"]).strip()
 
 class EducationForm(ModelForm):
     class Meta:
@@ -98,11 +109,13 @@ class EducationForm(ModelForm):
                 }
             ),
             "started_at": DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date", # Menggunakan HTML5 date picker
                 }
             ),
             "ended_at": DateInput(
+                format="%Y-%m-%d",
                 attrs={
                     "type": "date", # Menggunakan HTML5 date picker
                 }
