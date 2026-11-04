@@ -1,7 +1,8 @@
 import uuid
 from django.db import models
-from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User  # Tambahkan baris ini
+
+from main.validators import validate_date_range
 
 class Achievement(models.Model):
     title = models.CharField(max_length=200)
@@ -42,6 +43,10 @@ class Experience(models.Model):
     class Meta:
         ordering = ['-started_at']
 
+    def clean(self):
+        super().clean()
+        validate_date_range(self.started_at, self.ended_at)
+
     def __str__(self):
         return self.title
     
@@ -71,11 +76,7 @@ class Education(models.Model):
 
     def clean(self):
         super().clean()
-        if self.started_at and self.ended_at:
-            if self.ended_at < self.started_at:
-                raise ValidationError({
-                    'ended_at': 'Tanggal berakhir tidak boleh lebih awal dari tanggal mulai.'
-                })
+        validate_date_range(self.started_at, self.ended_at)
 
     def __str__(self):
         if self.degree:
