@@ -8,7 +8,6 @@ import datetime
 from django.contrib.auth.decorators import login_required  # Tambahkan baris ini
 from django.core.exceptions import PermissionDenied        # Tambahkan baris ini
 from django.template.loader import render_to_string
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from main.models import Experience, Education
@@ -31,8 +30,9 @@ def show_experience(request):
     title_query = request.GET.get("title", "").strip()
 
     context = {
-        "name": "Jonathan Sebastian Sindhu", 
+        "name": "Jonathan Sebastian Sindhu",
         "title_query": title_query,
+        "is_editor": is_editor_user(request.user),
         # Form kosong dipakai oleh modal "Add Experience" (submit via AJAX)
         "form": ExperienceForm(),
     }
@@ -46,7 +46,7 @@ def show_education(request):
     is_editor = is_editor_user(request.user)
 
     context = {
-        "name": "Jonathan Sebastian Sindhu", 
+        "name": "Jonathan Sebastian Sindhu",
         "institution_name_query": institution_name_query,
         # Alias agar template dapat memakai {{ institution_query }} pada empty state
         "institution_query": institution_name_query,
@@ -103,7 +103,7 @@ def get_experiences_json(request):
                 "starred_by_names": starred_by_names,
             }
         })
-    
+
     return JsonResponse(data, safe=False)
 
 @login_required(login_url="/login/")  # Tambahkan baris ini
@@ -181,7 +181,6 @@ def show_json_by_id(request, id):
     return JsonResponse(_serialize_experience(request, experience))
 
 
-@csrf_exempt
 @require_POST
 def create_experience_ajax(request):
     """Menambahkan Experience baru melalui AJAX."""
@@ -206,7 +205,6 @@ def create_experience_ajax(request):
     )
 
 
-@csrf_exempt
 @require_POST
 def delete_experience_ajax(request, id):
     """Menghapus Experience melalui AJAX."""
@@ -230,7 +228,6 @@ def delete_experience_ajax(request, id):
     )
 
 
-@csrf_exempt
 @require_POST
 def update_experience_ajax(request, id):
     """Memperbarui Experience melalui AJAX."""
@@ -469,11 +466,11 @@ def show_favorites(request):
     # Kita menggunakan order_by('-started_at') untuk menjaga urutan kronologis terbalik
     favorite_educations = Education.objects.filter(starred_by=request.user).order_by('-started_at')
     favorite_experiences = Experience.objects.filter(starred_by=request.user).order_by('-started_at')
-    
+
     context = {
         'name': 'Jonathan Sebastian Sindhu',
         'favorite_educations': favorite_educations,
         'favorite_experiences': favorite_experiences,
     }
-    
+
     return render(request, "favorites.html", context)
