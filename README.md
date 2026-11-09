@@ -244,3 +244,59 @@ Dalam pengerjaan Tugas 5 ini, saya memanfaatkan asisten kecerdasan buatan dengan
 
 ### Analisis Kritis Keterbatasan AI & Perbaikan Manual
 Dalam pengerjaan Tugas 5 ini, saya menggunakan GitHub Copilot untuk membantu menelusuri alur MVT, merancang endpoint JSON dan POST AJAX, menulis logika debouncing, serta memeriksa perlindungan CSRF dan XSS. Kode tetap disesuaikan secara manual dengan model Education, aturan role Editor/Superuser, endpoint star, dan struktur template proyek ini. Validasi akhir dilakukan dengan diagnostic editor, `python manage.py check`, dan test Django.
+
+---
+
+### Minggu 10 (Tutorial 07 & Individual Assignment 6)
+* Membangun API Django REST Framework untuk model Experience sebagai padanan model tutorial dan Education sebagai bagian tugas individu, menggunakan model serta data yang sudah ada.
+* Membuat ModelSerializer dengan daftar field eksplisit, informasi star read-only, pembersihan input teks, dan validasi urutan tanggal.
+* Memisahkan autentikasi berbasis session dan pemeriksaan hak akses melalui permission class. Pengunjung dapat membaca data, pengguna login dapat star/unstar, Editor dapat update, dan superuser dapat melakukan seluruh operasi CRUD.
+* Menyediakan endpoint daftar, detail, pencarian, dan star di bawah /api/v1/, dengan HTTP method serta status respons yang sesuai.
+* Mengintegrasikan halaman Experience dan Education dengan API melalui AJAX untuk membaca, mencari, menambah, mengubah, memberi star, serta menghapus data tanpa reload halaman.
+* Mempertahankan debounce, loading/error/empty state, toast, modal, escaping HTML, dan header X-CSRFToken untuk operasi tulis.
+* Menggabungkan helper JavaScript, logika serializer bersama, serta modal konfirmasi hapus untuk mengurangi pengulangan kode.
+* Menambahkan pengujian API untuk CRUD, validasi, hak akses setiap peran, star, perlindungan CSRF, dan efisiensi query.
+
+---
+
+### Tugas 6
+
+1. REST (Representational State Transfer) adalah gaya arsitektur untuk merancang web API, bukan library atau format data. Karena itu, API yang mengembalikan JSON belum tentu RESTful. Yang menentukan adalah cara API tersebut diatur. Dalam pola yang dipelajari pada Tutorial 07, data diperlakukan sebagai resource dengan URL yang jelas, sedangkan tindakan terhadapnya dinyatakan melalui HTTP method. Contohnya, GET /api/v1/educations/ membaca daftar pendidikan, POST pada URL yang sama membuat data, dan DELETE /api/v1/educations/<uuid>/ menghapus satu data. 
+
+   PUT berfungsi untuk memperbarui data dengan cara mengirimkan representasi pengganti secara utuh, sedangkan PATCH berfungsi untuk melakukan perubahan parsial dengan cara mengirimkan field yang ingin diubah saja tanpa menyertakan field lain. Sebagai contoh, ketika kita ingin mengganti seluruh isi artikel, kita dapat menggunakan PUT dengan mengirim versi lengkap artikel, seperti judul, subjudul, dan isi, sedangkan kita dapat menggunakan PATCH ketika kita hanya ingin mengganti judul artikel saja.
+
+2. Pada Django REST Framework, serializer bekerja sebagai penghubung dua arah antara server dengan client. Pada GET, serializer mengubah objek model menjadi tipe data Python yang dapat dirender ke JSON (serialization). Pada POST/PATCH, serializer mengubah input menjadi data yang sudah divalidasi dan siap disimpan (deserialization). Setelah `is_valid()` berhasil, data tersedia melalui validated_data dan dapat disimpan menggunakan `.save()`. Akan tetapi, hasil serializer belum berupa string JSON; renderer DRF yang mengubahnya menjadi isi response. 
+
+   Selain itu, keuntungan serializer (ModelSerializer) pada DRF dibandingkan merakit dictionary secara manual ialah kita tidak lagi memerlukan untuk merakit setiap field model satu per satu menggunakan perulangan karena sistem dapat langsung membaca definisi model dan membuatkan field otomatis dan validasi input dilakukan lebih mudah di serializer melalui method `is_valid(raise_exception=True)` yang bisa langsung memeriksa kelengkapan data dan raise exception ketika terdapat error dibandingkan sebelumnya yang harus memanggil cek dan error secara terpisah.
+
+3. Pada Django REST Framework, autentikasi menjawab siapa kamu, sedangkan otorisasi menjawab apa yang kamu boleh kamu lakukan dalam suatu aplikasi website. Autentikasi diimplementasikan dengan `@authentication_classes`, sedangkan otorisasi diimplementasikan dengan dekorator `@permission_classes`. Hak akses harus diperiksa dengan permission class di server karena pengguna bisa saja mengakses fitur yang tidak diizinkan untuk dia melalui endpoint terkait walaupun tombolnya telah disembunyikan di template.
+
+4. API yang menggunakan SessionAuthentication tetap memerlukan perlindungan CSRF untuk request terautentikasi yang mengubah data, seperti POST, PUT, PATCH, dan DELETE. Browser dapat menyertakan cookie session secara otomatis pada request yang memenuhi aturan pengiriman cookie. Penyerang dapat mencoba memanfaatkan perilaku ini agar request yang dipicu dari situs lain diproses menggunakan session korban. Karena itu, keberadaan session yang valid saja belum cukup. Pada AJAX, token dikirim melalui header X-CSRFToken. Server memeriksa token tersebut sebagai bagian perlindungan CSRF
+
+   Test yang memakai `force_authenticate` langsung menetapkan pengguna untuk request pengujian sehingga melewati proses autentikasi normal. Karena itu, test tersebut berguna untuk menguji permission, tetapi tidak membuktikan pemeriksaan CSRF berjalan. Pengujian CSRF perlu menggunakan `APIClient(enforce_csrf_checks=True)` dan `.login()` agar menggunakan session. Kemudian, test membuktikan request tanpa token ditolak dengan status 403 dan database tidak berubah.
+
+---
+
+## 🤖 Pernyataan Penggunaan AI (AI Disclosure)
+
+Dalam pengerjaan Tugas 6 ini, saya memanfaatkan asisten kecerdasan buatan dengan rincian transparansi sebagai berikut:
+
+* **Alat yang Digunakan:** Codex di Visual Studio Code dengan model GPT-6.1 Sol dan tingkat penalaran Medium.
+* **Strategi Prompting:**
+  * Memberikan kode proyek, PDF Tutorial 07 dan Tugas 6, serta konteks implementasi sebelumnya agar saran sesuai dengan ketentuan tugas.
+  * Menyampaikan permintaan secara spesifik dan bertahap, misalnya menyesuaikan JavaScript, memperbaiki tampilan, dan menambahkan pengujian.
+  * Meminta AI memeriksa kesesuaian implementasi dengan checklist PDF, menjelaskan temuan, dan menanyakan bagian yang ambigu sebelum melakukan perubahan.
+  * Memberikan umpan balik terhadap hasil yang kurang sesuai, seperti modal redundan, pengujian terpisah, dan akses update Editor.
+* **Bagian Spesifik yang Dibantu:**
+  * Menyesuaikan integrasi AJAX pada halaman Experience dan Education dengan endpoint Django REST Framework.
+  * Menyempurnakan serializer, validasi input, penanganan nilai null, dan validasi urutan tanggal.
+  * Menyesuaikan permission agar Editor dapat melakukan update, sementara create dan delete tetap khusus superuser.
+  * Memperbaiki ikon star, modal konfirmasi hapus, tampilan update, serta pesan kesalahan validasi.
+  * Memeriksa perlindungan CSRF pada API dan endpoint AJAX lama, serta escaping data untuk mengurangi risiko XSS.
+  * Menggabungkan pengujian API kedua model, menyatukan komponen modal hapus, dan memisahkan helper JavaScript bersama.
+  * Membantu pengujian CRUD, hak akses, star/unstar, CSRF, validasi, serta efisiensi query.
+  * Mengaudit kesesuaian implementasi dengan kedua PDF dan menyarankan pengelompokan file beserta pesan conventional commit.
+* **Log Obrolan / Riwayat:** [Tautan log chat atau ringkasan obrolan](https://chatgpt.com/s/cx_6af195abb06081918609b5b8c9319709)
+
+### Analisis Kritis Keterbatasan AI & Perbaikan Manual
+Dalam pengerjaan Tugas 6, saya menemukan bahwa keluaran AI tetap perlu diperiksa terhadap spesifikasi dan konteks proyek. Beberapa perubahan awal belum mempertahankan ikon star, modal konfirmasi hapus, dan akses update Editor. AI juga sempat menghasilkan komponen modal serta pengujian yang tumpang tindih. Setelah masalah tersebut saya identifikasi, saya meminta koreksi, penggabungan test, dan penyatuan modal. Pemeriksaan lanjutan juga menemukan perlindungan CSRF pada endpoint lama, penanganan nilai null, dan validasi tanggal yang perlu diperbaiki. Pengalaman ini menunjukkan bahwa keberhasilan test pada cakupan awal belum menjamin seluruh perilaku aplikasi benar; hasil AI tetap perlu ditinjau melalui pembacaan kode, pengujian kasus tambahan, dan pemeriksaan antarmuka.
